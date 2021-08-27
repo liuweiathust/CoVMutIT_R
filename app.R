@@ -18,7 +18,9 @@ library(shinyjs)
 
 # Header ------------------------------------------------------------------
 
-Header <- dashboardHeader(title = "CoVMutIT")
+Header <- dashboardHeader(
+    title = span("CoVMutIT", class="logo", style="font-size: 20px;")
+)
 
 
 # Sidebar ----------------------------------------------------------------
@@ -191,7 +193,6 @@ ui <- dashboardPage(
     sidebar = Sidebar,
     body = Body,
     footer = Footer,
-    title = "CoVMutIT",
     skin = "red-light"
 )
 
