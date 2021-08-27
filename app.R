@@ -11,6 +11,12 @@ library(shiny)
 library(shinydashboard)
 library(shinydashboardPlus)
 library(shinyjs)
+library(plotly)
+library(tidyverse)
+library(ggsci)
+library(cowplot)
+library(patchwork)
+library(ggrepel)
 
 
 # Pages -------------------------------------------------------------------
@@ -60,7 +66,8 @@ StatisticsTab <- tabItem(
     tabName = "statistics",
     fluidRow(
         box(
-            "statistics"
+            "statistics",
+            plotlyOutput("trends_bar_plot")
         )
     ) 
 )
@@ -185,6 +192,12 @@ Footer <- dashboardFooter(
 )
 
 
+# Load Data ---------------------------------------------------------------
+
+version <- readr::read_rds("data/version.rds")
+trends <- readr::read_rds("data/GISAID_sequences_count_trends.rds")
+
+
 # -------------------------------------------------------------------------
 
 # Define UI for application that draws a histogram
@@ -193,14 +206,27 @@ ui <- dashboardPage(
     sidebar = Sidebar,
     body = Body,
     footer = Footer,
-    skin = "red-light"
+    skin = "blue-light"
 )
 
-version <- readr::read_rds("data/version.rds")
+
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
     output$version <- renderText(version$version)
+    output$trends_bar_plot <- renderPlotly({
+        max_count <- max(trends$count)
+        g <- trends %>% ggplot(aes(x=date, y=count)) +
+            geom_bar(stat="identity", fill="#69738a") +
+            scale_y_continuous(labels = scales::label_number_si(), limits = c(0, max_count * 1.2)) +
+            xlab("") + ylab("#(sequences)") +
+            theme_void() +
+            theme(
+                axis.text = element_text(size=7),
+                axis.text.x = element_text(angle=45, hjust=0.8, vjust=1.0),
+            )
+        ggplotly(g)
+    })
 }
 
 # Run the application 
