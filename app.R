@@ -19,6 +19,19 @@ library(patchwork)
 library(ggrepel)
 
 
+# Helper functions ------------------------------------------------------------------------------------------------
+
+small_legend <- function(.plot, pointSize = 1, textSize = 8, spaceLegend = 0.8) {
+    .plot <- .plot +
+        guides(shape = guide_legend(override.aes = list(size = pointSize)),
+               color = guide_legend(override.aes = list(size = pointSize))) +
+        theme(legend.title = element_text(size = textSize), 
+              legend.text  = element_text(size = textSize),
+              legend.key.size = unit(spaceLegend, "lines"))
+    return(.plot)
+}
+
+
 # Pages -------------------------------------------------------------------
 
 
@@ -44,6 +57,10 @@ Sidebar <- dashboardSidebar(
 
 # Body --------------------------------------------------------------------
 
+
+# HomeTab ---------------------------------------------------------------------------------------------------------
+
+
 HomeTab <- tabItem(
     tabName = "home",
     fluidRow(
@@ -52,6 +69,10 @@ HomeTab <- tabItem(
         )
     )
 )
+
+
+# DetailsTab ------------------------------------------------------------------------------------------------------
+
 
 DetailsTab <- tabItem(
     tabName = "details",
@@ -62,15 +83,110 @@ DetailsTab <- tabItem(
     )
 )
 
+
+# StatisticsTab ---------------------------------------------------------------------------------------------------
+
+
+
 StatisticsTab <- tabItem(
     tabName = "statistics",
     fluidRow(
-        box(
-            "statistics",
-            plotlyOutput("trends_bar_plot")
+        div(
+            class = "col-sm-12",
+            box(
+                width=12,
+                solidHeader = FALSE,
+                background = NULL,
+                status = "primary",
+                fluidRow(
+                    column(
+                        width=3,
+                        descriptionBlock(
+                            header = "2,518,369",
+                            text = "Total assemblies",
+                            rightBorder = TRUE,
+                            marginBottom = FALSE
+                        )
+                    ),
+                    column(
+                        width=3,
+                        descriptionBlock(
+                            header = "2,518,369",
+                            text = "Total assemblies",
+                            rightBorder = TRUE,
+                            marginBottom = FALSE
+                        )
+                    ),
+                    column(
+                        width=3,
+                        descriptionBlock(
+                            header = "2,518,369",
+                            text = "Total assemblies",
+                            rightBorder = TRUE,
+                            marginBottom = FALSE
+                        )
+                    ),
+                    column(
+                        width=3,
+                        descriptionBlock(
+                            header = "2,518,369",
+                            text = "Total assemblies",
+                            rightBorder = TRUE,
+                            marginBottom = FALSE
+                        )
+                    )
+                )
+            )
+        )
+    ),
+    fluidRow(
+        
+        ###
+        div(
+            class = "col-lg-4 col-md-6 col-sm-12", 
+            box(
+                width = 12,
+                title = "Statistics",
+                plotlyOutput("trend_d_plot")
+            )
+        ),
+        
+        ###
+        div(
+            class = "col-lg-4 col-md-6 col-sm-12", 
+            box(
+                width = 12,
+                title = "Statistics",
+                plotlyOutput("trend_m_plot")
+            )
+        ),
+        
+        ###
+        div(
+            class = "col-lg-4 col-md-6 col-sm-12", 
+            box(
+                width = 12,
+                title = "Statistics",
+                plotOutput("top10_countries_sequences_count_piechart")
+            )
+        ),
+        
+        ###
+        div(
+            class = "col-lg-4 col-md-6 col-sm-12", 
+            box(
+                width = 12,
+                title = "Statistics",
+                plotlyOutput("mutations_accumulation_trends")
+            )
         )
     ) 
 )
+
+
+# DocumentsTab ----------------------------------------------------------------------------------------------------
+
+
 
 DocumentsTab <- tabItem(
     tabName = "documents",
@@ -83,6 +199,10 @@ DocumentsTab <- tabItem(
     )
     
 )
+
+
+# AboutUsTab ------------------------------------------------------------------------------------------------------
+
 
 AboutUsTab <- tabItem(
     tabName = "about",
@@ -195,7 +315,10 @@ Footer <- dashboardFooter(
 # Load Data ---------------------------------------------------------------
 
 version <- readr::read_rds("data/version.rds")
-trends <- readr::read_rds("data/GISAID_sequences_count_trends.rds")
+trend_d <- readr::read_rds("data/GISAID_daily_sequences_count.rds")
+trend_m <- readr::read_rds("data/GISAID_sequences_count_trends.rds")
+top10_countries_sequences_count <- readr::read_rds("data/top10_countries_sequences_count.rds")
+mutations_accumulation_trends <- readr::read_rds("data/mutations_accumutation_trends.rds")
 
 
 # -------------------------------------------------------------------------
@@ -214,18 +337,78 @@ ui <- dashboardPage(
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
     output$version <- renderText(version$version)
-    output$trends_bar_plot <- renderPlotly({
-        max_count <- max(trends$count)
-        g <- trends %>% ggplot(aes(x=date, y=count)) +
-            geom_bar(stat="identity", fill="#69738a") +
-            scale_y_continuous(labels = scales::label_number_si(), limits = c(0, max_count * 1.2)) +
-            xlab("") + ylab("#(sequences)") +
-            theme_void() +
+    output$trend_d_plot <- renderPlotly({
+        g <- trend_d %>% filter(group == "slide") %>% 
+            ggplot(aes(x=date, y=value)) +
+            geom_line(color=pal_aaas()(1), size=0.7) +
+            scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
+            scale_y_continuous(labels = scales::label_number_si()) +
+            ylab("7-Day Moving average") +
             theme(
-                axis.text = element_text(size=7),
+                axis.title = element_text(size=9),
+                axis.title.x = element_blank(),
+                axis.text = element_text(size=8),
                 axis.text.x = element_text(angle=45, hjust=0.8, vjust=1.0),
             )
         ggplotly(g)
+    })
+    
+    output$trend_m_plot <- renderPlotly({
+        g <- trend_m %>%  
+            mutate(date=lubridate::ymd(date, truncated = TRUE)) %>% 
+            ggplot(aes(x=date, y=count)) +
+            geom_bar(stat="identity", fill=pal_aaas()(1), alpha=0.7) +
+            scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
+            scale_y_continuous(labels = scales::label_number_si()) +
+            ylab("Monthly average") +
+            theme(
+                axis.title = element_text(size=9),
+                axis.title.x = element_blank(),
+                axis.text = element_text(size=8),
+                axis.text.x = element_text(angle=45, hjust=0.8, vjust=1.0),
+            )
+        ggplotly(g)
+    })
+    
+    output$top10_countries_sequences_count_piechart <- renderPlot({
+        g <- top10_countries_sequences_count %>% 
+            ggplot(aes(x=2, y=count, fill=factor(label, levels=label))) +
+            geom_bar(stat="identity") +
+            coord_polar("y", start=0) +
+            scale_fill_manual(
+                values=c(pal_npg()(10), "#CCCCCC"), 
+                name=paste("Countries (GISAID: ", format(version$last_update, "%b/%d/%Y"), ")")) +
+            ylab("") +
+            xlim(0.2, 2.5) +
+            theme_void() +
+            theme(
+                axis.title.x = element_blank(),
+                axis.text.x = element_blank(),
+                axis.line.x = element_blank(),
+                axis.ticks.x = element_blank(),
+                legend.text = element_text(family = "mono"),
+            )
+        return(small_legend(g, textSize = 9, pointSize = 8))
+    })
+    
+    output$mutations_accumulation_trends <- renderPlotly({
+        g <- mutations_accumulation_trends %>%  
+            ggplot(aes(x=date, y=mean, group=group, color=group)) +
+            geom_line() +
+            geom_point(size=0.8)+
+            geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd), width=.3,
+                          position=position_dodge(0.05)) +
+            ylab("#(mutantions)") +
+            scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
+            scale_color_aaas() +
+            theme(
+                axis.title = element_text(size=9),
+                axis.title.x = element_blank(),
+                axis.text = element_text(size=8),
+                axis.text.x = element_text(angle=45, hjust=0.8, vjust=1.0),
+                legend.position = "bottom",
+            )
+        ggplotly(g)%>% layout(legend = list(orientation = "h"))
     })
 }
 
