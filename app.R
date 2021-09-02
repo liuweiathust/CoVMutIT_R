@@ -17,7 +17,8 @@ library(ggsci)
 library(cowplot)
 library(patchwork)
 library(ggrepel)
-
+library(leaflet)
+library(jsonlite)
 
 # Helper functions ------------------------------------------------------------------------------------------------
 
@@ -49,6 +50,7 @@ Sidebar <- dashboardSidebar(
         menuItem("Home", tabName = "home", icon = icon("home")),
         menuItem("Details", tabName = "details", icon = icon("globe")),
         menuItem("Statistics", tabName = "statistics", icon = icon("chart-line")),
+        menuItem("Predict", tabName = "predict", icon = icon("compass")),
         menuItem("Doucments", tabName = "documents", icon = icon("question-circle")),
         menuItem("About us", tabName = "about", icon = icon("address-card"))
     )
@@ -64,8 +66,16 @@ Sidebar <- dashboardSidebar(
 HomeTab <- tabItem(
     tabName = "home",
     fluidRow(
-        box(
-            "home"
+        div(
+            class = "col-sm-12 col-lg-8",
+            box(
+                width=12,
+                leafletOutput("main_map")
+            )
+        ),
+        div(
+            class = "col-sm-12 col-lg-4",
+            box(width=12)
         )
     )
 )
@@ -184,6 +194,21 @@ StatisticsTab <- tabItem(
 )
 
 
+# PredictTab --------------------------------------------------------------
+
+PredictTab <- tabItem(
+    tabName = "predict",
+    fluidRow(
+        box(
+            "hello world",
+            width = 12
+        ) 
+        
+    )
+    
+)
+
+
 # DocumentsTab ----------------------------------------------------------------------------------------------------
 
 
@@ -286,6 +311,7 @@ Body <- dashboardBody(
     tabItems(
         HomeTab,
         DetailsTab,
+        PredictTab,
         DocumentsTab,
         StatisticsTab,
         AboutUsTab
@@ -319,6 +345,7 @@ trend_d <- readr::read_rds("data/GISAID_daily_sequences_count.rds")
 trend_m <- readr::read_rds("data/GISAID_sequences_count_trends.rds")
 top10_countries_sequences_count <- readr::read_rds("data/top10_countries_sequences_count.rds")
 mutations_accumulation_trends <- readr::read_rds("data/mutations_accumutation_trends.rds")
+balding_nichols_model_resutls <- readr::read_rds("data/BN_results_aggregated.rds")
 
 
 # -------------------------------------------------------------------------
@@ -409,6 +436,10 @@ server <- function(input, output, session) {
                 legend.position = "bottom",
             )
         ggplotly(g)%>% layout(legend = list(orientation = "h"))
+    })
+    
+    output$main_map <- renderLeaflet({
+        leaflet() %>% addTiles()
     })
 }
 
