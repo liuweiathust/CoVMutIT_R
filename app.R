@@ -10,6 +10,7 @@
 library(shiny)
 library(shinydashboard)
 library(shinydashboardPlus)
+library(shinycssloaders)
 library(shinyjs)
 library(plotly)
 library(tidyverse)
@@ -19,6 +20,11 @@ library(patchwork)
 library(ggrepel)
 library(leaflet)
 library(jsonlite)
+
+
+# Constants -------------------------------------------------------------------------------------------------------
+
+DEFAULT_SPINNER_COLOR = "#3C8DBC"
 
 # Helper functions ------------------------------------------------------------------------------------------------
 
@@ -47,6 +53,7 @@ Header <- dashboardHeader(
 
 Sidebar <- dashboardSidebar(
     sidebarMenu(
+        id = "main_sidebar_tabs",
         menuItem("Home", tabName = "home", icon = icon("home")),
         menuItem("Details", tabName = "details", icon = icon("globe")),
         menuItem("Statistics", tabName = "statistics", icon = icon("chart-line")),
@@ -75,7 +82,32 @@ HomeTab <- tabItem(
         ),
         div(
             class = "col-sm-12 col-lg-4",
-            box(width=12)
+            box(
+                width=12,
+                selectInput(
+                    "home__gene_select",
+                    label = "Gene",
+                    choices = c("S"),
+                    selected = "S",
+                    multiple = FALSE
+                ),
+                selectInput(
+                    "home__mutation_select",
+                    label = "Mutation",
+                    choices = c("A23403G"),
+                    selected = "A23403G",
+                    multiple = FALSE
+                ),
+                actionButton("home__show_details", "Show details")
+            )
+        ),
+        div(
+            class = "col-sm-12",
+            box(
+                title = "line plot showing trend of mutant frequency changes",
+                plotlyOutput("mutation_freq_monthly_trend")
+                
+            )
         )
     )
 )
@@ -87,8 +119,66 @@ HomeTab <- tabItem(
 DetailsTab <- tabItem(
     tabName = "details",
     fluidRow(
-        box(
-            "details"
+        div(
+            class = "col-sm-8 col-lg-9",
+            box(
+                width = 12,
+                title = "Basic information",
+                "hello world!"
+            ),
+            box(
+                width = 12,
+                closable = FALSE,
+                collapsible = TRUE,
+                "hello world!"
+            ),
+            box(
+                width = 12,
+                closable = FALSE,
+                collapsible = TRUE,
+                "hello world!"
+            ),
+            box(
+                width = 12,
+                closable = FALSE,
+                collapsible = TRUE,
+                "hello world!"
+            )
+        ),
+        div(
+            class = "col-sm-4 col-lg-3",
+            box(
+                width = 12,
+                selectInput(
+                    "details__gene_select",
+                    label = "Select Gene",
+                    choices = c("S"),
+                    selected = "S",
+                    multiple = FALSE
+                ),
+                selectInput(
+                    "details__mutation_select",
+                    label = "Select Gene",
+                    choices = c("S"),
+                    selected = "S",
+                    multiple = FALSE
+                ),
+                selectInput(
+                    "details__country_select",
+                    label = "Select Gene",
+                    choices = c("S"),
+                    selected = "S",
+                    multiple = FALSE
+                ),
+                selectInput(
+                    "details__date_select",
+                    label = "Select Gene",
+                    choices = c("S"),
+                    selected = "S",
+                    multiple = FALSE
+                )
+            )
+            
         )
     )
 )
@@ -157,7 +247,7 @@ StatisticsTab <- tabItem(
             box(
                 width = 12,
                 title = "Statistics",
-                plotlyOutput("trend_d_plot")
+                plotlyOutput("trend_d_plot") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
             )
         ),
         
@@ -167,7 +257,7 @@ StatisticsTab <- tabItem(
             box(
                 width = 12,
                 title = "Statistics",
-                plotlyOutput("trend_m_plot")
+                plotlyOutput("trend_m_plot") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
             )
         ),
         
@@ -177,7 +267,7 @@ StatisticsTab <- tabItem(
             box(
                 width = 12,
                 title = "Statistics",
-                plotOutput("top10_countries_sequences_count_piechart")
+                plotOutput("top10_countries_sequences_count_piechart") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
             )
         ),
         
@@ -187,7 +277,7 @@ StatisticsTab <- tabItem(
             box(
                 width = 12,
                 title = "Statistics",
-                plotlyOutput("mutations_accumulation_trends")
+                plotlyOutput("mutations_accumulation_trends") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
             )
         )
     ) 
@@ -200,9 +290,25 @@ PredictTab <- tabItem(
     tabName = "predict",
     fluidRow(
         box(
-            "hello world",
-            width = 12
-        ) 
+            title = "Predict",
+            width = 12,
+            fluidRow(
+                div(
+                    class = "col-sm-12",
+                    "[description holdplace]",
+                ),
+                div(
+                    class = "col-sm-12 col-lg-6",
+                    fileInput(
+                        "predict_upload", 
+                        label = "Upload File", 
+                        multiple = FALSE, 
+                        accept = c(".csv", ".tsv", ".xlsx")),
+                ) 
+            ),
+            footer = actionButton("run_predict", "Predict")
+        )
+        
         
     )
     
@@ -346,7 +452,8 @@ trend_m <- readr::read_rds("data/GISAID_sequences_count_trends.rds")
 top10_countries_sequences_count <- readr::read_rds("data/top10_countries_sequences_count.rds")
 mutations_accumulation_trends <- readr::read_rds("data/mutations_accumutation_trends.rds")
 balding_nichols_model_resutls <- readr::read_rds("data/BN_results_aggregated.rds")
-
+mutations_monthly_count_all <- readr::read_rds("data/mutations_monthly_count_table_all.rds")
+mutations_monthly_count_each <- readr::read_rds("data/mutations_monthly_count_table_each.rds")
 
 # -------------------------------------------------------------------------
 
@@ -363,7 +470,12 @@ ui <- dashboardPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
+    observeEvent(input$home__show_details, {
+        updateTabItems(session, "main_sidebar_tabs", "details")
+    })
+    
     output$version <- renderText(version$version)
+    
     output$trend_d_plot <- renderPlotly({
         g <- trend_d %>% filter(group == "slide") %>% 
             ggplot(aes(x=date, y=value)) +
@@ -441,6 +553,28 @@ server <- function(input, output, session) {
     output$main_map <- renderLeaflet({
         leaflet() %>% addTiles()
     })
+    
+    output$mutation_freq_monthly_trend <- renderPlotly({
+        g <- mutations_monthly_count_each %>% 
+            filter(mutation == input$home__mutation_select) %>% 
+            gather(date, count, colnames(mutations_monthly_count_each)[-1]) %>% 
+            left_join(mutations_monthly_count_all) %>% 
+            mutate(freq = count / total, date = lubridate::ymd(date, truncated = TRUE)) %>% 
+            ggplot(aes(x=date, y=freq)) +
+            geom_line(color=pal_aaas()(1), size=0.7) +
+            scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
+            scale_y_continuous(labels = scales::percent) +
+            ylab("Mutant frequency") +
+            theme(
+                axis.title = element_text(size=9),
+                axis.title.x = element_blank(),
+                axis.text = element_text(size=8),
+                axis.text.x = element_text(angle=45, hjust=0.8, vjust=1.0),
+            )
+        ggplotly(g)
+    })
+    
+    
 }
 
 # Run the application 
