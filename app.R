@@ -136,13 +136,13 @@ DetailsTab <- tabItem(
                 width = 12,
                 closable = FALSE,
                 collapsible = TRUE,
-                "hello world!"
+                plotOutput("balding_nichols_manhattan_plot") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
             ),
             box(
                 width = 12,
                 closable = FALSE,
                 collapsible = TRUE,
-                "hello world!"
+                plotOutput("mutation_freq_bimonthly_scatter", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
             )
         ),
         div(
@@ -158,23 +158,23 @@ DetailsTab <- tabItem(
                 ),
                 selectInput(
                     "details__mutation_select",
-                    label = "Select Gene",
-                    choices = c("S"),
-                    selected = "S",
+                    label = "Select Mutation",
+                    choices = c("A23403G", "A23063T"),
+                    selected = "A23063T",
                     multiple = FALSE
                 ),
                 selectInput(
                     "details__country_select",
-                    label = "Select Gene",
-                    choices = c("S"),
-                    selected = "S",
+                    label = "Select Country",
+                    choices = c("USA"),
+                    selected = "USA",
                     multiple = FALSE
                 ),
                 selectInput(
                     "details__date_select",
-                    label = "Select Gene",
-                    choices = c("S"),
-                    selected = "S",
+                    label = "Select Date",
+                    choices = c("2021-04"),
+                    selected = "2021-04",
                     multiple = FALSE
                 )
             )
@@ -451,7 +451,7 @@ trend_d <- readr::read_rds("data/GISAID_daily_sequences_count.rds")
 trend_m <- readr::read_rds("data/GISAID_sequences_count_trends.rds")
 top10_countries_sequences_count <- readr::read_rds("data/top10_countries_sequences_count.rds")
 mutations_accumulation_trends <- readr::read_rds("data/mutations_accumutation_trends.rds")
-balding_nichols_model_resutls <- readr::read_rds("data/BN_results_aggregated.rds")
+balding_nichols_model_results <- readr::read_rds("data/BN_results_aggregated.rds")
 mutations_monthly_count_all <- readr::read_rds("data/mutations_monthly_count_table_all.rds")
 mutations_monthly_count_each <- readr::read_rds("data/mutations_monthly_count_table_each.rds")
 
@@ -554,7 +554,7 @@ server <- function(input, output, session) {
         leaflet() %>% addTiles()
     })
     
-    output$mutation_freq_monthly_trend <- renderPlotly({
+    output$mutation_freq_monthly_trend <- renderPlot({
         g <- mutations_monthly_count_each %>% 
             filter(mutation == input$home__mutation_select) %>% 
             gather(date, count, colnames(mutations_monthly_count_each)[-1]) %>% 
@@ -574,6 +574,26 @@ server <- function(input, output, session) {
         ggplotly(g)
     })
     
+    output$balding_nichols_manhattan_plot <- renderPlot({
+
+    })
+    
+    output$mutation_freq_bimonthly_scatter <- renderPlot({
+        bn_scatter_data <- balding_nichols_model_results %>% 
+            filter(iso3c == input$details__country_select & month_next == input$details__date_select) 
+        bn_scatter_highlight <- bn_scatter_data %>% filter(mutation == input$details__mutation_select)
+        
+        ggplot() +
+            geom_abline(slope=1, intercept = 0, color="#CCCCCC", linetype=2, size=1) +
+            geom_point(aes(x=freq_prev, y=freq_next), data=bn_scatter_data, size=2, alpha=0.8, color="#999999") +
+            geom_point(aes(x=freq_prev, y=freq_next), data=bn_scatter_highlight, size=2, alpha=0.8, color="#EE0000") +
+            geom_text_repel(aes(x=freq_prev, y=freq_next, label=mutation), data=bn_scatter_highlight, color="#EE0000", box.padding = 0.5) +
+            scale_x_continuous(labels = scales::percent, limits = c(0, 1)) +
+            scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
+            xlab("mutation frequency (prev-month)") +
+            ylab("mutation frequency (next-month)") +
+            coord_fixed() 
+    })
     
 }
 
