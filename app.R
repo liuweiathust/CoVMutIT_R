@@ -459,6 +459,7 @@ balding_nichols_model_results <- readr::read_rds("data/BN_results_aggregated.rds
 mutations_monthly_count_all <- readr::read_rds("data/mutations_monthly_count_table_all.rds")
 mutations_monthly_count_each <- readr::read_rds("data/mutations_monthly_count_table_each.rds")
 mutation_position_table <- readr::read_rds("data/mutation_position_table.rds")
+country_code_table <- readr::read_rds("data/country_code_table.rds")
 
 # -------------------------------------------------------------------------
 
