@@ -46,6 +46,22 @@ small_legend <- function(.plot, pointSize = 1, textSize = 8, spaceLegend = 0.8) 
 }
 
 
+# Load Data ---------------------------------------------------------------
+
+version <- readr::read_rds("data/version.rds")
+trend_d <- readr::read_rds("data/GISAID_daily_sequences_count.rds")
+trend_m <- readr::read_rds("data/GISAID_sequences_count_trends.rds")
+top10_countries_sequences_count <- readr::read_rds("data/top10_countries_sequences_count.rds")
+mutations_accumulation_trends <- readr::read_rds("data/mutations_accumutation_trends.rds")
+balding_nichols_model_results <- readr::read_rds("data/BN_results_aggregated.rds")
+mutations_monthly_count_all <- readr::read_rds("data/mutations_monthly_count_table_all.rds")
+mutations_monthly_count_each <- readr::read_rds("data/mutations_monthly_count_table_each.rds")
+mutation_position_table <- readr::read_rds("data/mutation_position_table.rds")
+country_code_table <- readr::read_rds("data/country_code_table.rds")
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+
 # Pages -------------------------------------------------------------------
 
 
@@ -450,21 +466,6 @@ Footer <- dashboardFooter(
     )
 )
 
-
-# Load Data ---------------------------------------------------------------
-
-version <- readr::read_rds("data/version.rds")
-trend_d <- readr::read_rds("data/GISAID_daily_sequences_count.rds")
-trend_m <- readr::read_rds("data/GISAID_sequences_count_trends.rds")
-top10_countries_sequences_count <- readr::read_rds("data/top10_countries_sequences_count.rds")
-mutations_accumulation_trends <- readr::read_rds("data/mutations_accumutation_trends.rds")
-balding_nichols_model_results <- readr::read_rds("data/BN_results_aggregated.rds")
-mutations_monthly_count_all <- readr::read_rds("data/mutations_monthly_count_table_all.rds")
-mutations_monthly_count_each <- readr::read_rds("data/mutations_monthly_count_table_each.rds")
-mutation_position_table <- readr::read_rds("data/mutation_position_table.rds")
-country_code_table <- readr::read_rds("data/country_code_table.rds")
-
-world <- ne_countries(scale = "medium", returnclass = "sf")
 
 # -------------------------------------------------------------------------
 
