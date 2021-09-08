@@ -22,6 +22,10 @@ library(leaflet)
 library(jsonlite)
 
 
+# Set ggplot2 default theme -----------------------------------------------
+
+theme_set(theme_bw())
+
 # Constants -------------------------------------------------------------------------------------------------------
 
 DEFAULT_SPINNER_COLOR = "#3C8DBC"
@@ -587,7 +591,6 @@ server <- function(input, output, session) {
             scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
             scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
             ylab("Mutant frequency") +
-            theme_bw() +
             theme(
                 axis.title.x = element_blank()
             )
@@ -612,7 +615,6 @@ server <- function(input, output, session) {
             geom_text_repel(data=bn_manhattan_highlight, mapping=aes(x=position, y=log10pvalue, label=mutation), color="#EE0000", box.padding = 0.5) +
             ylab(expression("-log"[10]~"(p-value)")) +
             xlab("SARS-CoV-2 genome position") +
-            theme_bw() +
             theme(
                 legend.position = "none"
             )
@@ -633,7 +635,6 @@ server <- function(input, output, session) {
             scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
             xlab("mutation frequency (prev-month)") +
             ylab("mutation frequency (next-month)") +
-            theme_bw() +
             coord_fixed() 
     })
     
