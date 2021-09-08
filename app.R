@@ -593,8 +593,8 @@ server <- function(input, output, session) {
             left_join(mutations_monthly_count_all) %>% 
             mutate(freq = count / total, date = lubridate::ymd(date, truncated = TRUE)) %>% 
             ggplot(aes(x=date, y=freq)) +
-            geom_vline(xintercept=lubridate::ymd(input$details__date_select, truncated = TRUE), color="#EE0000", size=0.5, alpha=0.8, linetype=2) +
-            geom_line(color=pal_aaas()(1), size=0.7) +
+            geom_vline(xintercept=lubridate::ymd(input$details__date_select, truncated = TRUE), color="#EE0000", size=1.0, alpha=0.8, linetype=2) +
+            geom_line(color=pal_aaas()(1), size=1) +
             scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
             scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
             ylab("Mutant frequency") +
@@ -616,8 +616,8 @@ server <- function(input, output, session) {
         ggplot() +
             geom_vline(xintercept=21563, color="#CCCCCC", size=1.0, alpha=0.8, linetype=2) +
             geom_vline(xintercept=25384, color="#CCCCCC", size=1.0, alpha=0.8, linetype=2) +
-            geom_point(aes(x=position, y=log10pvalue), size=1.2, color="#999999", alpha=0.85, data=bn_manhattan_data) +
-            geom_point(aes(x=position, y=log10pvalue), size=1.2, color="#EE0000", data=bn_manhattan_highlight) +
+            geom_point(aes(x=position, y=log10pvalue), size=2, color="#999999", alpha=0.85, data=bn_manhattan_data) +
+            geom_point(aes(x=position, y=log10pvalue), size=2, color="#EE0000", data=bn_manhattan_highlight) +
             scale_y_continuous(limits = c(0, max_value)) +
             geom_text_repel(data=bn_manhattan_highlight, mapping=aes(x=position, y=log10pvalue, label=mutation), color="#EE0000", box.padding = 0.5) +
             ylab(expression("-log"[10]~"(p-value)")) +
