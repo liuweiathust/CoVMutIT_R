@@ -58,6 +58,7 @@ mutations_monthly_count_all <- readr::read_rds("data/mutations_monthly_count_tab
 mutations_monthly_count_each <- readr::read_rds("data/mutations_monthly_count_table_each.rds")
 mutation_position_table <- readr::read_rds("data/mutation_position_table.rds")
 country_code_table <- readr::read_rds("data/country_code_table.rds")
+mutation_with_annotation <- readr::read_rds("data/mutations_with_annotation.rds")
 
 world_sf <- ne_countries(scale = "medium", returnclass = "sf")
 
