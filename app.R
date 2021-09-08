@@ -59,6 +59,7 @@ mutations_monthly_count_each <- readr::read_rds("data/mutations_monthly_count_ta
 mutation_position_table <- readr::read_rds("data/mutation_position_table.rds")
 country_code_table <- readr::read_rds("data/country_code_table.rds")
 mutation_with_annotation <- readr::read_rds("data/mutations_with_annotation.rds")
+candidate_mutations <- readr::read_rds("data/candidate_mutations.rds")
 
 world_sf <- ne_countries(scale = "medium", returnclass = "sf")
 
@@ -100,10 +101,11 @@ HomeTab <- tabItem(
         div(
             class = "col-sm-12 col-lg-8",
             box(
-                width=12,
-                leafletOutput("main_map")
+                width = 12,
+                DT::dataTableOutput("table")
             )
         ),
+
         div(
             class = "col-sm-12 col-lg-4",
             box(
@@ -123,14 +125,6 @@ HomeTab <- tabItem(
                     multiple = FALSE
                 ),
                 actionButton("home__show_details", "Show details")
-            )
-        ),
-        div(
-            class = "col-sm-12",
-            box(
-                title = "line plot showing trend of mutant frequency changes",
-                plotlyOutput("mutation_freq_monthly_trend")
-                
             )
         )
     )
@@ -488,6 +482,8 @@ server <- function(input, output, session) {
     })
     
     output$version <- renderText(version$version)
+    
+    output$table <- DT::renderDataTable(candidate_mutations, selection = 'single')
     
     output$trend_d_plot <- renderPlotly({
         g <- trend_d %>% filter(group == "slide") %>% 
