@@ -122,32 +122,59 @@ HomeTab <- tabItem(
     tabName = "home",
     fluidRow(
         div(
-            class = "col-sm-12 col-lg-8",
-            box(
-                width = 12,
-                DT::dataTableOutput("home__mutations_table")
+            class = "col-sm-12 col-lg-2",
+            fluidRow(
+                box(
+                    width=12,
+                    selectInput(
+                        "home__gene_select",
+                        label = "Gene",
+                        choices = genes_list,
+                        selected = "S",
+                        multiple = FALSE
+                    ),
+                    selectInput(
+                        "home__pvalue_select",
+                        label = "p-value",
+                        choices = c("<= 1e-5", "<= 1e-6", "<= 1e-7", "<= 1e-8", "<= 1e-9", "<= 1e-10"),
+                        selected = "<= 1e-5",
+                        multiple = FALSE
+                    )
+                )
             )
+        ),
+        
+        div(
+            class = "col-sm-12 col-lg-6",
+            style = "min-width: 950px;",
+            fluidRow(
+                box(
+                    width = 12,
+                    DT::dataTableOutput("home__mutations_table")
+                )
+            )
+
         ),
 
         div(
             class = "col-sm-12 col-lg-4",
-            box(
-                width=12,
-                selectInput(
-                    "home__gene_select",
-                    label = "Gene",
-                    choices = c("S"),
-                    selected = "S",
-                    multiple = FALSE
+            fluidRow(
+                box(
+                    width = 12,
+                    plotOutput("home__global_mutation_count_plot")
                 ),
-                selectInput(
-                    "home__mutation_select",
-                    label = "Mutation",
-                    choices = c("A23403G"),
-                    selected = "A23403G",
-                    multiple = FALSE
-                ),
-                actionButton("home__show_details", "Show details")
+                box(
+                    width = 12,
+                    selectInput(
+                        "home__country_select",
+                        label = "Country",
+                        choices = c("GBR", "USA"),
+                        selected = "USA",
+                        multiple = FALSE
+                    ),
+                    plotOutput("home__country_mutation_count_plot")
+                )
+                
             )
         )
     )
@@ -500,19 +527,46 @@ ui <- dashboardPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
-    observeEvent(input$home__show_details, {
-        updateTabItems(session, "main_sidebar_tabs", "details")
-    })
-    
+
+    # Footer ------------------------------------------------------------------
+
     output$version <- renderText(version$version)
-    
+
+
+    # Home --------------------------------------------------------------------
+
     output$home__mutations_table <- DT::renderDataTable(
-        prepare_mutation_table(candidate_mutations), 
+        candidate_mutations %>% 
+            filter(gene == input$home__gene_select) %>% 
+            filter(pvalue_min <= switch(
+                input$home__pvalue_select,
+                "<= 1e-5"  = 1e-5, 
+                "<= 1e-6"  = 1e-6, 
+                "<= 1e-7"  = 1e-7, 
+                "<= 1e-8"  = 1e-8, 
+                "<= 1e-9"  = 1e-9, 
+                "<= 1e-10" = 1e-10
+            )) %>% 
+            prepare_mutation_table(), 
         selection = 'single',
         options = list(
+            pageLength = 25,
             columnDefs = list(list(className = 'dt-center', targets = "_all"))
         )
     )
+    
+    output$home__global_mutation_count_plot <- renderPlot({
+        # geographic heatmap
+        return (NULL)
+    })
+    
+    output$home__country_mutation_count_plot <- renderPlot({
+        # line plot
+        return (NULL)
+    })
+    
+
+    # Statistics --------------------------------------------------------------
     
     output$trend_d_plot <- renderPlotly({
         g <- trend_d %>% filter(group == "slide") %>% 
@@ -588,9 +642,9 @@ server <- function(input, output, session) {
         ggplotly(g)%>% layout(legend = list(orientation = "h"))
     })
     
-    output$main_map <- renderLeaflet({
-        leaflet() %>% addTiles()
-    })
+
+
+    # Details -----------------------------------------------------------------
     
     output$mutation_freq_monthly_trend <- renderPlot({
         g <- mutations_monthly_count_each %>% 
