@@ -60,8 +60,18 @@ mutation_position_table <- readr::read_rds("data/mutation_position_table.rds")
 country_code_table <- readr::read_rds("data/country_code_table.rds")
 mutation_with_annotation <- readr::read_rds("data/mutations_with_annotation.rds")
 candidate_mutations <- readr::read_rds("data/candidate_mutations.rds")
+candidate_mutations_count_table_country <-  readr::read_rds("data/candidate_mutations_count_table_country.rds")
+candidate_mutations_total_table_country <-  readr::read_rds("data/candidate_mutations_total_table_country.rds")
+candidate_mutations_count_table_global <-  readr::read_rds("data/candidate_mutations_count_table_global.rds")
+candidate_mutations_total_table_global <-  readr::read_rds("data/candidate_mutations_total_table_global.rds")
+
 
 world_sf <- ne_countries(scale = "medium", returnclass = "sf")
+
+
+# Genes -------------------------------------------------------------------
+
+genes_list <- c("ORF1ab", "S", "ORF3a", "E", "M", "ORF6", "ORF7a", "ORF7b", "ORF8", "N", "ORF10")
 
 
 # Preprocess mutation table for HTML displaying ---------------------------
@@ -70,9 +80,9 @@ prepare_mutation_table <- function(mutation_table) {
     mutation_table %>% mutate(min_pvalue = ifelse(pvalue_min == 0, "0", scales::scientific(pvalue_min, digits = 2))) %>% 
         mutate(nt_position = scales::label_comma(accuracy = 1)(position)) %>% 
         mutate(aa_position = scales::label_comma(accuracy = 1)(aa_pos)) %>% 
-        mutate(ref = ifelse(nchar(ref) >= 6, "...", ref)) %>% 
-        mutate(alt = ifelse(nchar(alt) >= 6, "...", alt)) %>% 
-        mutate(aa_change = ifelse(nchar(aa_change) >= 10, "...", aa_change)) %>% 
+        mutate(ref = ifelse(nchar(ref) > 6, "...", ref)) %>% 
+        mutate(alt = ifelse(nchar(alt) > 6, "...", alt)) %>% 
+        mutate(aa_change = ifelse(nchar(aa_change) > 10, "...", aa_change)) %>% 
         select(
             Mutation=mutation, 
             `p-value(min)`=min_pvalue, 
