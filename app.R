@@ -91,9 +91,9 @@ prepare_mutation_table <- function(mutation_table) {
             Gene=gene, 
             REF=ref, 
             ALT=alt, 
-            AA_Position=aa_position, 
-            AA_Change=aa_change, 
-            Class=class
+            # AA_Position=aa_position, 
+            AA_Change=aa_change 
+            # Class=class
         )
 }
 
@@ -157,7 +157,6 @@ HomeTab <- tabItem(
         
         div(
             class = "col-sm-12 col-lg-6",
-            style = "min-width: 950px;",
             fluidRow(
                 box(
                     width = 12,
