@@ -64,6 +64,29 @@ candidate_mutations <- readr::read_rds("data/candidate_mutations.rds")
 world_sf <- ne_countries(scale = "medium", returnclass = "sf")
 
 
+# Preprocess mutation table for HTML displaying ---------------------------
+
+prepare_mutation_table <- function(mutation_table) {
+    mutation_table %>% mutate(min_pvalue = ifelse(pvalue_min == 0, "0", scales::scientific(pvalue_min, digits = 2))) %>% 
+        mutate(nt_position = scales::label_comma(accuracy = 1)(position)) %>% 
+        mutate(aa_position = scales::label_comma(accuracy = 1)(aa_pos)) %>% 
+        mutate(ref = ifelse(nchar(ref) >= 6, "...", ref)) %>% 
+        mutate(alt = ifelse(nchar(alt) >= 6, "...", alt)) %>% 
+        mutate(aa_change = ifelse(nchar(aa_change) >= 10, "...", aa_change)) %>% 
+        select(
+            Mutation=mutation, 
+            `p-value(min)`=min_pvalue, 
+            NT_Position=nt_position, 
+            Gene=gene, 
+            REF=ref, 
+            ALT=alt, 
+            AA_Position=aa_position, 
+            AA_Change=aa_change, 
+            Class=class
+        )
+}
+
+
 # Pages -------------------------------------------------------------------
 
 
@@ -102,7 +125,7 @@ HomeTab <- tabItem(
             class = "col-sm-12 col-lg-8",
             box(
                 width = 12,
-                DT::dataTableOutput("table")
+                DT::dataTableOutput("home__mutations_table")
             )
         ),
 
@@ -483,7 +506,13 @@ server <- function(input, output, session) {
     
     output$version <- renderText(version$version)
     
-    output$table <- DT::renderDataTable(candidate_mutations, selection = 'single')
+    output$home__mutations_table <- DT::renderDataTable(
+        prepare_mutation_table(candidate_mutations), 
+        selection = 'single',
+        options = list(
+            columnDefs = list(list(className = 'dt-center', targets = "_all"))
+        )
+    )
     
     output$trend_d_plot <- renderPlotly({
         g <- trend_d %>% filter(group == "slide") %>% 
