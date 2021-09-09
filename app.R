@@ -27,7 +27,7 @@ library(rnaturalearthdata)
 
 # Set ggplot2 default theme -----------------------------------------------
 
-theme_set(theme_bw())
+# theme_set(theme_bw())
 
 # Constants -------------------------------------------------------------------------------------------------------
 
@@ -171,7 +171,18 @@ HomeTab <- tabItem(
             fluidRow(
                 box(
                     width = 12,
-                    plotOutput("home__global_mutation_count_plot")
+                    status = "danger",
+                    title = "Selected Mutation",
+                    descriptionBlock(
+                        header = "A23403G",
+                        text = "D614G"
+                    )
+                ),
+                box(
+                    width = 12,
+                    closable = FALSE,
+                    collapsible = TRUE,
+                    plotOutput("home__global_mutation_count_plot", height = 250)
                 ),
                 box(
                     width = 12,
@@ -545,7 +556,7 @@ server <- function(input, output, session) {
 
     # Home --------------------------------------------------------------------
 
-    output$home__mutations_table <- DT::renderDataTable(
+    home__CandidateMutations <- reactive({
         candidate_mutations %>% 
             filter(gene == input$home__gene_select) %>% 
             filter(pvalue_min <= switch(
@@ -557,21 +568,45 @@ server <- function(input, output, session) {
                 "<= 1e-9"  = 1e-9, 
                 "<= 1e-10" = 1e-10
             )) %>% 
-            prepare_mutation_table(), 
+            prepare_mutation_table()
+    })
+    
+    home__MutationSelected <- reactive({
+        ifelse(
+            length(input$home__mutations_table_rows_selected),
+            home__CandidateMutations()[input$home__mutations_table_rows_selected,] %>% pull(Mutation),
+            "A23403G"
+        )
+    })
+    
+    
+    output$home__mutations_table <- DT::renderDataTable(
+        home__CandidateMutations(), 
         selection = 'single',
         options = list(
             pageLength = 25,
             columnDefs = list(list(className = 'dt-center', targets = "_all"))
         )
     )
+
     
     output$home__global_mutation_count_plot <- renderPlot({
         # geographic heatmap
-        return (NULL)
+        mutationCountTable <- candidate_mutations_count_table_country %>% 
+            filter(mutation == home__MutationSelected()) %>% 
+            gather("date", "count", colnames(candidate_mutations_count_table_country)[-c(1, 2)]) %>% 
+            group_by(mutation, iso3c) %>% 
+            summarise(total=sum(count)) %>% 
+            ungroup()
+        mutationCountSF <- world_sf %>% left_join(mutationCountTable, by=c("iso_a3" = "iso3c"))
+        ggplot(data = mutationCountSF) +
+            geom_sf(aes(fill=total)) +
+            scale_fill_distiller(palette = "RdBu", trans = "log10")
     })
     
     output$home__country_mutation_count_plot <- renderPlot({
         # line plot
+        candidate_mutations_count_table_country %>% 
         return (NULL)
     })
     
