@@ -72,6 +72,7 @@ world_sf <- ne_countries(scale = "medium", returnclass = "sf")
 # Genes -------------------------------------------------------------------
 
 genes_list <- c("ORF1ab", "S", "ORF3a", "E", "M", "ORF6", "ORF7a", "ORF7b", "ORF8", "N", "ORF10")
+date_list <- colnames(candidate_mutations_total_table_global)
 
 
 # Preprocess mutation table for HTML displaying ---------------------------
@@ -251,8 +252,8 @@ DetailsTab <- tabItem(
                 selectInput(
                     "details__date_select",
                     label = "Select Date",
-                    choices = c("2021-03", "2021-04", "2021-05"),
-                    selected = "2021-04",
+                    choices = date_list[4:length(date_list)],
+                    selected = date_list[length(date_list)],
                     multiple = FALSE
                 )
             )
