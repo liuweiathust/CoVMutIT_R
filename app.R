@@ -450,6 +450,11 @@ PredictTab <- tabItem(
                 ) 
             ),
             footer = actionButton("run_predict", "Predict")
+        ),
+        box(
+            title = "Uploaded File Path",
+            width = 12,
+            tableOutput("upload_file_path")
         )
         
         
@@ -942,6 +947,9 @@ server <- function(input, output, session) {
     })
     
 
+    # Predict -----------------------------------------------------------------
+
+    output$upload_file_path <- renderTable(input$predict_upload)
 
     
 }
