@@ -692,7 +692,7 @@ server <- function(input, output, session) {
             ggplot(aes(x=date, y=freq)) +
             geom_line(color=DEFAULT_LINE_COLOR, size=1) +
             scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
-            scale_y_continuous(labels = scales::percent) +
+            scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
             ylab("Mutation frequency") +
             theme(
                 axis.title.x = element_blank(),
@@ -801,13 +801,17 @@ server <- function(input, output, session) {
     })
     
     output$mutation_monthly_freq_line_plot <- renderPlot({
-        mutations_monthly_count_each %>% 
+        date_next <- lubridate::ymd(input$details__date_select, truncated = TRUE)
+        date_prev <- date_next - months(1)
+        g <- mutations_monthly_count_each %>% 
             filter(mutation == input$details__mutation_select) %>% 
             gather(date, count, colnames(mutations_monthly_count_each)[-1]) %>% 
             left_join(mutations_monthly_count_all) %>% 
             mutate(freq = count / total, date = lubridate::ymd(date, truncated = TRUE)) %>% 
             ggplot(aes(x=date, y=freq)) +
-            geom_vline(xintercept=lubridate::ymd(input$details__date_select, truncated = TRUE), color="#EE0000", size=1.0, alpha=0.8, linetype=2) +
+            geom_vline(xintercept=date_prev, color="#EE0000", size=1.0, alpha=0.2, linetype=2) +
+            geom_vline(xintercept=date_next, color="#EE0000", size=1.0, alpha=0.2, linetype=2) +
+            geom_rect(aes(xmin=date_prev, xmax=date_next, ymin=-Inf, ymax=Inf), fill="#EE0000", alpha=0.01) +
             geom_line(color=DEFAULT_LINE_COLOR, size=1) +
             scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
             scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
@@ -815,6 +819,8 @@ server <- function(input, output, session) {
             theme(
                 axis.title.x = element_blank()
             )
+        return (g)
+        # ggplotly(g) %>%  config(modeBarButtons = list(list("toImage")), displaylogo = FALSE, toImageButtonOptions = list(filename = "download", format = "svg"))
     })
     
     output$balding_nichols_manhattan_plot <- renderPlot({
