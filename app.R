@@ -175,8 +175,8 @@ HomeTab <- tabItem(
                     status = "danger",
                     title = "Selected Mutation",
                     descriptionBlock(
-                        header = "A23403G",
-                        text = "D614G"
+                        header = textOutput("home__mutation_selected"),
+                        text = textOutput("home__mutation_selected_aachange")
                     )
                 ),
                 box(
@@ -216,24 +216,77 @@ DetailsTab <- tabItem(
                 title = "Basic information",
                 "hello world!"
             ),
-            box(
-                width = 12,
-                closable = FALSE,
-                collapsible = TRUE,
-                plotOutput("mutation_monthly_freq_line_plot", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
+            fluidRow(
+                div(
+                    class = "col-sm-12 col-lg-6",
+                    box(
+                        width = 12,
+                        closable = FALSE,
+                        collapsible = TRUE,
+                        plotOutput("mutation_count_geographic_distribution", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
+                    )
+                ),
+                
+                div(
+                    class = "col-sm-12 col-lg-6",
+                    box(
+                        width = 12,
+                        closable = FALSE,
+                        collapsible = TRUE,
+                        plotOutput("mutation_freq_geographic_distribution", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
+                    )
+                ),
+                
+                div(
+                    class = "col-sm-12 col-lg-6",
+                    box(
+                        width = 12,
+                        closable = FALSE,
+                        collapsible = TRUE,
+                        plotOutput("mutation_count_geographic_distribution_within_date", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
+                    )
+                ),
+                
+                div(
+                    class = "col-sm-12 col-lg-6",
+                    box(
+                        width = 12,
+                        closable = FALSE,
+                        collapsible = TRUE,
+                        plotOutput("mutation_freq_geographic_distribution_within_date", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
+                    )
+                ),
+                
+                div(
+                  class = "col-sm-12 col-lg-12",
+                  box(
+                      width = 12,
+                      closable = FALSE,
+                      collapsible = TRUE,
+                      plotOutput("mutation_monthly_freq_line_plot", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
+                  )
+                ),
+                
+                div(
+                  class = "col-sm-12 col-lg-12",
+                  box(
+                      width = 12,
+                      closable = FALSE,
+                      collapsible = TRUE,
+                      plotOutput("balding_nichols_manhattan_plot", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
+                  )
+                ),
+                
+                div(
+                  class = "col-sm-12 col-lg-12",
+                  box(
+                      width = 12,
+                      closable = FALSE,
+                      collapsible = TRUE,
+                      plotOutput("mutation_freq_bimonthly_scatter", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
+                  )
+                )  
             ),
-            box(
-                width = 12,
-                closable = FALSE,
-                collapsible = TRUE,
-                plotOutput("balding_nichols_manhattan_plot", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
-            ),
-            box(
-                width = 12,
-                closable = FALSE,
-                collapsible = TRUE,
-                plotOutput("mutation_freq_bimonthly_scatter", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
-            )
         ),
         div(
             class = "col-sm-4 col-lg-3",
@@ -580,6 +633,20 @@ server <- function(input, output, session) {
         )
     })
     
+    home__MutationSelectedAAChange <- reactive({
+        ifelse(
+            length(input$home__mutations_table_rows_selected),
+            home__CandidateMutations()[input$home__mutations_table_rows_selected,] %>% pull(AA_Change),
+            "D614G"
+        )
+    })
+    
+    output$home__mutation_selected <- renderText(home__MutationSelected())
+    
+    output$home__mutation_selected_aachange <- renderText({
+        sprintf("%s:%s", input$home__gene_select, home__MutationSelectedAAChange())
+    })
+    
     
     output$home__mutations_table <- DT::renderDataTable(
         home__CandidateMutations(), 
@@ -633,6 +700,164 @@ server <- function(input, output, session) {
             )
     })
     
+    # Details -----------------------------------------------------------------
+    
+    output$mutation_count_geographic_distribution <- renderPlot({
+        mutationCountTable <- candidate_mutations_count_table_country %>% 
+            filter(mutation == input$details__mutation_select) %>% 
+            gather("date", "count", colnames(candidate_mutations_count_table_country)[-c(1, 2)]) %>% 
+            group_by(mutation, iso3c) %>% 
+            summarise(total=sum(count)) %>% 
+            ungroup()
+        
+        mutationCountSF <- world_sf %>% left_join(mutationCountTable, by=c("iso_a3" = "iso3c"))
+        
+        ggplot(data = mutationCountSF) +
+            geom_sf(aes(fill=total)) +
+            scale_fill_distiller(name = "count", palette = "RdBu", trans = "log10")
+    })
+    
+    output$mutation_freq_geographic_distribution <- renderPlot({
+        mutationCountTable <- candidate_mutations_count_table_country %>% 
+            filter(mutation == input$details__mutation_select) %>% 
+            gather("date", "count", colnames(candidate_mutations_count_table_country)[-c(1, 2)]) %>% 
+            group_by(mutation, iso3c) %>% 
+            summarise(count=sum(count)) %>% 
+            ungroup()
+        
+        mutationTotalTable <- candidate_mutations_total_table_country %>% 
+            gather("date", "total", colnames(candidate_mutations_total_table_country)[-c(1)]) %>% 
+            group_by(iso3c) %>% 
+            summarise(total=sum(total)) %>% 
+            ungroup()
+        
+        mutationFreqTable <- mutationCountTable %>% 
+            left_join(mutationTotalTable, by="iso3c") %>% 
+            mutate(freq = ifelse((total == 0), NA, count / total)) %>% 
+            mutate(percent = freq *100)
+        
+        mutationCountSF <- world_sf %>% left_join(mutationFreqTable, by=c("iso_a3" = "iso3c"))
+        
+        ggplot(data = mutationCountSF) +
+            geom_sf(aes(fill=percent)) +
+            scale_fill_distiller(name = "percent", palette = "RdBu", limits=c(0, 100))
+    })
+    
+    output$mutation_count_geographic_distribution_within_date <- renderPlot({
+        mutationCountTable <- candidate_mutations_count_table_country %>% 
+            filter(mutation == input$details__mutation_select) %>% 
+            gather("date", "count", colnames(candidate_mutations_count_table_country)[-c(1, 2)]) %>% 
+            filter(date == input$details__date_select) %>% 
+            ungroup()
+        
+        mutationCountSF <- world_sf %>% left_join(mutationCountTable, by=c("iso_a3" = "iso3c"))
+        
+        ggplot(data = mutationCountSF) +
+            geom_sf(aes(fill=count)) +
+            scale_fill_distiller(name = "count", palette = "RdBu", trans = "log10")
+    })
+    
+    output$mutation_freq_geographic_distribution_within_date <- renderPlot({
+        mutationCountTable <- candidate_mutations_count_table_country %>% 
+            filter(mutation == input$details__mutation_select) %>% 
+            gather("date", "count", colnames(candidate_mutations_count_table_country)[-c(1, 2)]) %>% 
+            filter(date == input$details__date_select) %>% 
+            ungroup()
+        
+        mutationTotalTable <- candidate_mutations_total_table_country %>% 
+            gather("date", "total", colnames(candidate_mutations_total_table_country)[-c(1)]) %>% 
+            filter(date == input$details__date_select)
+        
+        mutationFreqTable <- mutationCountTable %>% 
+            left_join(mutationTotalTable, by="iso3c") %>% 
+            mutate(freq = ifelse((total == 0), NA, count / total)) %>% 
+            mutate(percent = freq *100)
+        
+        mutationCountSF <- world_sf %>% left_join(mutationFreqTable, by=c("iso_a3" = "iso3c"))
+        
+        ggplot(data = mutationCountSF) +
+            geom_sf(aes(fill=percent)) +
+            scale_fill_distiller(name = "percent", palette = "RdBu", limits=c(0, 100))
+    })
+    
+    output$mutation_freq_monthly_trend <- renderPlot({
+        g <- mutations_monthly_count_each %>% 
+            filter(mutation == input$home__mutation_select) %>% 
+            gather(date, count, colnames(mutations_monthly_count_each)[-1]) %>% 
+            left_join(mutations_monthly_count_all) %>% 
+            mutate(freq = count / total, date = lubridate::ymd(date, truncated = TRUE)) %>% 
+            ggplot(aes(x=date, y=freq)) +
+            geom_line(color=DEFAULT_LINE_COLOR, size=0.7) +
+            scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
+            scale_y_continuous(labels = scales::percent) +
+            ylab("Mutant frequency") +
+            theme(
+                axis.title = element_text(size=9),
+                axis.title.x = element_blank(),
+                axis.text = element_text(size=8),
+                axis.text.x = element_text(angle=45, hjust=0.8, vjust=1.0),
+            )
+        ggplotly(g)
+    })
+    
+    output$mutation_monthly_freq_line_plot <- renderPlot({
+        mutations_monthly_count_each %>% 
+            filter(mutation == input$details__mutation_select) %>% 
+            gather(date, count, colnames(mutations_monthly_count_each)[-1]) %>% 
+            left_join(mutations_monthly_count_all) %>% 
+            mutate(freq = count / total, date = lubridate::ymd(date, truncated = TRUE)) %>% 
+            ggplot(aes(x=date, y=freq)) +
+            geom_vline(xintercept=lubridate::ymd(input$details__date_select, truncated = TRUE), color="#EE0000", size=1.0, alpha=0.8, linetype=2) +
+            geom_line(color=DEFAULT_LINE_COLOR, size=1) +
+            scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
+            scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
+            ylab("Mutant frequency") +
+            theme(
+                axis.title.x = element_blank()
+            )
+    })
+    
+    output$balding_nichols_manhattan_plot <- renderPlot({
+        max_value <- 20
+        
+        bn_manhattan_data <- balding_nichols_model_results %>% 
+            filter(iso3c == input$details__country_select & month_next == input$details__date_select) %>% 
+            left_join(mutation_position_table, by="mutation") %>% 
+            mutate(log10pvalue=ifelse(pvalue == 0, max_value, -log10(pvalue)))
+        
+        bn_manhattan_highlight <- bn_manhattan_data %>% filter(mutation == input$details__mutation_select)
+        
+        ggplot() +
+            geom_vline(xintercept=21563, color="#CCCCCC", size=1.0, alpha=0.8, linetype=2) +
+            geom_vline(xintercept=25384, color="#CCCCCC", size=1.0, alpha=0.8, linetype=2) +
+            geom_point(aes(x=position, y=log10pvalue), size=2, color="#999999", alpha=0.85, data=bn_manhattan_data) +
+            geom_point(aes(x=position, y=log10pvalue), size=2, color="#EE0000", data=bn_manhattan_highlight) +
+            scale_y_continuous(limits = c(0, max_value)) +
+            geom_text_repel(data=bn_manhattan_highlight, mapping=aes(x=position, y=log10pvalue, label=mutation), color="#EE0000", box.padding = 0.5) +
+            ylab(expression("-log"[10]~"(p-value)")) +
+            xlab("SARS-CoV-2 genome position") +
+            theme(
+                legend.position = "none"
+            )
+        
+    })
+    
+    output$mutation_freq_bimonthly_scatter <- renderPlot({
+        bn_scatter_data <- balding_nichols_model_results %>% 
+            filter(iso3c == input$details__country_select & month_next == input$details__date_select)
+        bn_scatter_highlight <- bn_scatter_data %>% filter(mutation == input$details__mutation_select)
+        
+        ggplot() +
+            geom_abline(slope=1, intercept = 0, color="#CCCCCC", linetype=2, size=1) +
+            geom_point(aes(x=freq_prev, y=freq_next), data=bn_scatter_data, size=2, alpha=0.8, color="#999999") +
+            geom_point(aes(x=freq_prev, y=freq_next), data=bn_scatter_highlight, size=2, alpha=0.8, color="#EE0000") +
+            geom_text_repel(aes(x=freq_prev, y=freq_next, label=mutation), data=bn_scatter_highlight, color="#EE0000", box.padding = 0.5) +
+            scale_x_continuous(labels = scales::percent, limits = c(0, 1)) +
+            scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
+            xlab("mutation frequency (prev-month)") +
+            ylab("mutation frequency (next-month)") +
+            coord_fixed() 
+    })
 
     # Statistics --------------------------------------------------------------
     
@@ -712,86 +937,6 @@ server <- function(input, output, session) {
     
 
 
-    # Details -----------------------------------------------------------------
-    
-    output$mutation_freq_monthly_trend <- renderPlot({
-        g <- mutations_monthly_count_each %>% 
-            filter(mutation == input$home__mutation_select) %>% 
-            gather(date, count, colnames(mutations_monthly_count_each)[-1]) %>% 
-            left_join(mutations_monthly_count_all) %>% 
-            mutate(freq = count / total, date = lubridate::ymd(date, truncated = TRUE)) %>% 
-            ggplot(aes(x=date, y=freq)) +
-            geom_line(color=DEFAULT_LINE_COLOR, size=0.7) +
-            scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
-            scale_y_continuous(labels = scales::percent) +
-            ylab("Mutant frequency") +
-            theme(
-                axis.title = element_text(size=9),
-                axis.title.x = element_blank(),
-                axis.text = element_text(size=8),
-                axis.text.x = element_text(angle=45, hjust=0.8, vjust=1.0),
-            )
-        ggplotly(g)
-    })
-    
-    output$mutation_monthly_freq_line_plot <- renderPlot({
-        mutations_monthly_count_each %>% 
-            filter(mutation == input$details__mutation_select) %>% 
-            gather(date, count, colnames(mutations_monthly_count_each)[-1]) %>% 
-            left_join(mutations_monthly_count_all) %>% 
-            mutate(freq = count / total, date = lubridate::ymd(date, truncated = TRUE)) %>% 
-            ggplot(aes(x=date, y=freq)) +
-            geom_vline(xintercept=lubridate::ymd(input$details__date_select, truncated = TRUE), color="#EE0000", size=1.0, alpha=0.8, linetype=2) +
-            geom_line(color=DEFAULT_LINE_COLOR, size=1) +
-            scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
-            scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
-            ylab("Mutant frequency") +
-            theme(
-                axis.title.x = element_blank()
-            )
-    })
-    
-    output$balding_nichols_manhattan_plot <- renderPlot({
-        max_value <- 20
-        
-        bn_manhattan_data <- balding_nichols_model_results %>% 
-            filter(iso3c == input$details__country_select & month_next == input$details__date_select) %>% 
-            left_join(mutation_position_table, by="mutation") %>% 
-            mutate(log10pvalue=ifelse(pvalue == 0, max_value, -log10(pvalue)))
-        
-        bn_manhattan_highlight <- bn_manhattan_data %>% filter(mutation == input$details__mutation_select)
-        
-        ggplot() +
-            geom_vline(xintercept=21563, color="#CCCCCC", size=1.0, alpha=0.8, linetype=2) +
-            geom_vline(xintercept=25384, color="#CCCCCC", size=1.0, alpha=0.8, linetype=2) +
-            geom_point(aes(x=position, y=log10pvalue), size=2, color="#999999", alpha=0.85, data=bn_manhattan_data) +
-            geom_point(aes(x=position, y=log10pvalue), size=2, color="#EE0000", data=bn_manhattan_highlight) +
-            scale_y_continuous(limits = c(0, max_value)) +
-            geom_text_repel(data=bn_manhattan_highlight, mapping=aes(x=position, y=log10pvalue, label=mutation), color="#EE0000", box.padding = 0.5) +
-            ylab(expression("-log"[10]~"(p-value)")) +
-            xlab("SARS-CoV-2 genome position") +
-            theme(
-                legend.position = "none"
-            )
-
-    })
-    
-    output$mutation_freq_bimonthly_scatter <- renderPlot({
-        bn_scatter_data <- balding_nichols_model_results %>% 
-            filter(iso3c == input$details__country_select & month_next == input$details__date_select)
-        bn_scatter_highlight <- bn_scatter_data %>% filter(mutation == input$details__mutation_select)
-        
-        ggplot() +
-            geom_abline(slope=1, intercept = 0, color="#CCCCCC", linetype=2, size=1) +
-            geom_point(aes(x=freq_prev, y=freq_next), data=bn_scatter_data, size=2, alpha=0.8, color="#999999") +
-            geom_point(aes(x=freq_prev, y=freq_next), data=bn_scatter_highlight, size=2, alpha=0.8, color="#EE0000") +
-            geom_text_repel(aes(x=freq_prev, y=freq_next, label=mutation), data=bn_scatter_highlight, color="#EE0000", box.padding = 0.5) +
-            scale_x_continuous(labels = scales::percent, limits = c(0, 1)) +
-            scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
-            xlab("mutation frequency (prev-month)") +
-            ylab("mutation frequency (next-month)") +
-            coord_fixed() 
-    })
     
 }
 
