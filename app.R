@@ -32,6 +32,7 @@ library(rnaturalearthdata)
 # Constants -------------------------------------------------------------------------------------------------------
 
 DEFAULT_SPINNER_COLOR = "#3C8DBC"
+DEFAULT_LINE_COLOR = "#4393C3"
 
 # Helper functions ------------------------------------------------------------------------------------------------
 
@@ -193,7 +194,7 @@ HomeTab <- tabItem(
                         selected = "USA",
                         multiple = FALSE
                     ),
-                    plotOutput("home__country_mutation_count_plot")
+                    plotOutput("home__country_mutation_count_plot", height = 250)
                 )
                 
             )
@@ -606,8 +607,30 @@ server <- function(input, output, session) {
     
     output$home__country_mutation_count_plot <- renderPlot({
         # line plot
-        candidate_mutations_count_table_country %>% 
-        return (NULL)
+        mutationCountTable <- candidate_mutations_count_table_country %>%
+            filter(mutation == home__MutationSelected()) %>% 
+            filter(iso3c == input$home__country_select) %>% 
+            gather("date", "count", colnames(candidate_mutations_count_table_country)[-c(1, 2)]) %>% 
+            mutate(date = lubridate::ymd(date, truncated = TRUE))
+        
+        mutationTotalTable <- candidate_mutations_total_table_country %>% 
+            filter(iso3c == input$home__country_select) %>% 
+            gather("date", "total", colnames(candidate_mutations_count_table_country)[-c(1, 2)]) %>% 
+            mutate(date = lubridate::ymd(date, truncated = TRUE))
+        
+        mutationCountTable %>% 
+            left_join(mutationTotalTable, by=c("iso3c", "date")) %>% 
+            filter(date >= as.Date("2020-03-01")) %>% 
+            mutate(freq=ifelse(total==0, 0, count / total)) %>% 
+            ggplot(aes(x=date, y=freq)) +
+            geom_line(color=DEFAULT_LINE_COLOR, size=1) +
+            scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
+            scale_y_continuous(labels = scales::percent) +
+            ylab("Mutation frequency") +
+            theme(
+                axis.title.x = element_blank(),
+                axis.text.x = element_text(angle=45, hjust=0.8, vjust=1.0),
+            )
     })
     
 
@@ -616,7 +639,7 @@ server <- function(input, output, session) {
     output$trend_d_plot <- renderPlotly({
         g <- trend_d %>% filter(group == "slide") %>% 
             ggplot(aes(x=date, y=value)) +
-            geom_line(color=pal_aaas()(1), size=0.7) +
+            geom_line(color=DEFAULT_LINE_COLOR, size=0.7) +
             scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
             scale_y_continuous(labels = scales::label_number_si()) +
             ylab("7-Day Moving average") +
@@ -633,7 +656,7 @@ server <- function(input, output, session) {
         g <- trend_m %>%  
             mutate(date=lubridate::ymd(date, truncated = TRUE)) %>% 
             ggplot(aes(x=date, y=count)) +
-            geom_bar(stat="identity", fill=pal_aaas()(1), alpha=0.7) +
+            geom_bar(stat="identity", fill=DEFAULT_LINE_COLOR, alpha=0.7) +
             scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
             scale_y_continuous(labels = scales::label_number_si()) +
             ylab("Monthly average") +
@@ -698,7 +721,7 @@ server <- function(input, output, session) {
             left_join(mutations_monthly_count_all) %>% 
             mutate(freq = count / total, date = lubridate::ymd(date, truncated = TRUE)) %>% 
             ggplot(aes(x=date, y=freq)) +
-            geom_line(color=pal_aaas()(1), size=0.7) +
+            geom_line(color=DEFAULT_LINE_COLOR, size=0.7) +
             scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
             scale_y_continuous(labels = scales::percent) +
             ylab("Mutant frequency") +
@@ -719,7 +742,7 @@ server <- function(input, output, session) {
             mutate(freq = count / total, date = lubridate::ymd(date, truncated = TRUE)) %>% 
             ggplot(aes(x=date, y=freq)) +
             geom_vline(xintercept=lubridate::ymd(input$details__date_select, truncated = TRUE), color="#EE0000", size=1.0, alpha=0.8, linetype=2) +
-            geom_line(color=pal_aaas()(1), size=1) +
+            geom_line(color=DEFAULT_LINE_COLOR, size=1) +
             scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
             scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
             ylab("Mutant frequency") +
