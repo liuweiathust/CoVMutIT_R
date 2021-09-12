@@ -467,9 +467,13 @@ PredictTab <- tabItem(
                 box(
                     width = 12,
                     collapsible = TRUE,
+                    title = "Example upload data for prediction",
                     tableOutput("predict__example_data_table")
                 )
             )
+        ),
+        hidden(
+            div(id = "predict_result_anchor")
         )
     )
     
@@ -976,6 +980,13 @@ server <- function(input, output, session) {
     })
 
     output$predict__example_data_table <- renderTable({predictExampleData()})
+    
+    output$predict__run_predict <- renderUI({
+        fluidRow(
+            box(),
+            box()
+        )
+    })
     
 }
 
