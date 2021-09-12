@@ -65,6 +65,8 @@ candidate_mutations_count_table_country <-  readr::read_rds("data/candidate_muta
 candidate_mutations_total_table_country <-  readr::read_rds("data/candidate_mutations_total_table_country.rds")
 candidate_mutations_count_table_global <-  readr::read_rds("data/candidate_mutations_count_table_global.rds")
 candidate_mutations_total_table_global <-  readr::read_rds("data/candidate_mutations_total_table_global.rds")
+predict_example_data <- readr::read_rds("data/predict_example_data.rds")
+colnames(predict_example_data) <- c("mutation", "position", "freq_prev", "freq_next")
 
 
 world_sf <- ne_countries(scale = "medium", returnclass = "sf")
@@ -449,15 +451,26 @@ PredictTab <- tabItem(
                         accept = c(".csv", ".tsv", ".xlsx")),
                 ) 
             ),
-            footer = actionButton("run_predict", "Predict")
+            footer = div(
+                actionButton("predict__run_predict", "Predict"),
+                actionButton("predict__load_example_data", "Show Example")
+            )
         ),
         box(
             title = "Uploaded File Path",
             width = 12,
             tableOutput("upload_file_path")
+        ),
+        hidden(
+            div(
+                id = "predict__exmpale_data_container", 
+                box(
+                    width = 12,
+                    collapsible = TRUE,
+                    tableOutput("predict__example_data_table")
+                )
+            )
         )
-        
-        
     )
     
 )
@@ -562,6 +575,7 @@ AboutUsTab <- tabItem(
 )
 
 Body <- dashboardBody(
+    useShinyjs(),
     tabItems(
         HomeTab,
         DetailsTab,
@@ -949,8 +963,19 @@ server <- function(input, output, session) {
 
     # Predict -----------------------------------------------------------------
 
+    observeEvent(input$predict__load_example_data, {
+        shinyjs::show("predict__exmpale_data_container")
+    })
+    
     output$upload_file_path <- renderTable(input$predict_upload)
+    
+    predictExampleData <- reactive({
+        predict_example_data[sample(nrow(mutation_freq_table), ceiling(nrow(mutation_freq_table) / 10)), ] %>% 
+            filter_at(vars(c(freq_prev, freq_next)), any_vars(. != 0 )) %>% 
+            head(n=10)
+    })
 
+    output$predict__example_data_table <- renderTable({predictExampleData()})
     
 }
 
