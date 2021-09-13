@@ -467,7 +467,7 @@ PredictTab <- tabItem(
                 box(
                     width = 12,
                     collapsible = TRUE,
-                    title = "Example upload data for prediction",
+                    title = "Example data for prediction",
                     tableOutput("predict__example_data_table")
                 )
             )
@@ -974,7 +974,7 @@ server <- function(input, output, session) {
     output$upload_file_path <- renderTable(input$predict_upload)
     
     predictExampleData <- reactive({
-        predict_example_data[sample(nrow(mutation_freq_table), ceiling(nrow(mutation_freq_table) / 10)), ] %>% 
+        predict_example_data[sample(nrow(predict_example_data), ceiling(nrow(predict_example_data) / 10)), ] %>% 
             filter_at(vars(c(freq_prev, freq_next)), any_vars(. != 0 )) %>% 
             head(n=10)
     })
