@@ -79,9 +79,17 @@ genes_list <- c("ORF1ab", "S", "ORF3a", "E", "M", "ORF6", "ORF7a", "ORF7b", "ORF
 
 # initialize data ---------------------------------------------------------
 
-date_list <- colnames(candidate_mutations_total_table_global)
+DATE_LIST <- colnames(candidate_mutations_total_table_global)
 
-iso3c_list <- candidate_mutations_count_table_country %>% distinct(iso3c) %>% pull()
+ISO3C_LIST <- candidate_mutations_count_table_country %>% distinct(iso3c) %>% pull()
+
+COUNTRY_LIST <- world_sf %>% 
+    left_join(distinct(candidate_mutations_count_table_country, iso3c), by=c("iso_a3" = "iso3c")) %>% 
+    select(geounit, iso_a3) %>% 
+    st_drop_geometry() %>% 
+    drop_na() %>% 
+    arrange(geounit) %>% 
+    deframe()
 
 
 # Preprocess mutation table for HTML displaying ---------------------------
@@ -157,7 +165,7 @@ HomeTab <- tabItem(
                         "home__pvalue_select",
                         label = "p-value",
                         choices = c("<= 1e-5", "<= 1e-6", "<= 1e-7", "<= 1e-8", "<= 1e-9", "<= 1e-10"),
-                        selected = "<= 1e-5",
+                        selected = "<= 1e-10",
                         multiple = FALSE
                     )
                 )
@@ -198,7 +206,7 @@ HomeTab <- tabItem(
                     selectInput(
                         "home__country_select",
                         label = "Country",
-                        choices = c("GBR", "USA"),
+                        choices = COUNTRY_LIST,
                         selected = "USA",
                         multiple = FALSE
                     ),
@@ -324,8 +332,8 @@ DetailsTab <- tabItem(
                 selectInput(
                     "details__date_select",
                     label = "Select Date",
-                    choices = date_list[4:length(date_list)],
-                    selected = date_list[length(date_list)],
+                    choices = DATE_LIST[4:length(DATE_LIST)],
+                    selected = DATE_LIST[length(DATE_LIST)],
                     multiple = FALSE
                 )
             )
