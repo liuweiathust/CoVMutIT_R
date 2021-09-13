@@ -11,6 +11,7 @@ library(shiny)
 library(shinydashboard)
 library(shinydashboardPlus)
 library(shinycssloaders)
+# library(shinyWidgets)
 library(shinyjs)
 library(plotly)
 library(tidyverse)
@@ -24,6 +25,11 @@ library(sf)
 library(rnaturalearth)
 library(rnaturalearthdata)
 
+
+
+# Load moudles ------------------------------------------------------------
+
+source("./predict.R")
 
 # Set ggplot2 default theme -----------------------------------------------
 
@@ -476,7 +482,7 @@ PredictTab <- tabItem(
         box(
             title = "Uploaded File Path",
             width = 12,
-            tableOutput("upload_file_path")
+            DT::dataTableOutput("upload_file_path")
         ),
         hidden(
             div(
@@ -497,6 +503,44 @@ PredictTab <- tabItem(
                 textOutput("predict__debug_output")
             )
         ),
+        hidden(
+            div(
+                id = "predict__progress_bar_container",
+                class = "col-lg-12 col-md-12", 
+                shinyWidgets::progressBar(id = "predict__progress_bar", value = 0, total = 4000, title = "Predicting ...", display_pct = TRUE)
+            )
+        ),
+        hidden(
+          div(
+              id = "predict__result_container",
+              fluidRow(
+                  div(
+                      class = "col-lg-6 col-md-12", 
+                      box(
+                          width = 12,
+                          div(
+                              align = "center",
+                              plotOutput("predict__result_F_estimate_plot", width = 350, height = 300) %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
+                          )
+                      )
+                  ),
+                  div(
+                      class = "col-lg-6 col-md-12", 
+                      box(
+                          width = 12,
+                          plotOutput("predict__result_mutation_freq_scatter_plot", height = 300) %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
+                      )
+                  ),
+                  div(
+                      class = "col-lg-12 col-md-12", 
+                      box(
+                          width = 12,
+                          DT::dataTableOutput("predict__result_table")
+                      )
+                  )
+              )
+          )  
+        ),
         div(id = "predict_result_anchor")
     )
     
@@ -514,9 +558,7 @@ DocumentsTab <- tabItem(
            "hello world",
            width = 12
        ) 
-
     )
-    
 )
 
 
@@ -1027,7 +1069,7 @@ server <- function(input, output, session) {
         debugMessage()
     })
     
-    output$upload_file_path <- renderTable(input$predict_upload)
+    output$upload_file_path <- DT::renderDataTable(input$predict_upload, )
     
     predictExampleData <- reactive({
         predict_example_data[sample(nrow(predict_example_data), ceiling(nrow(predict_example_data) / 10)), ] %>% 
@@ -1041,6 +1083,35 @@ server <- function(input, output, session) {
     })
 
     output$predict__example_data_table <- renderTable(predictExampleData(), align = "c")
+    
+    observeEvent(input$predict__run_predict_with_example_data, {
+        shinyjs::show("predict__progress_bar_container")
+        
+        shinyWidgets::updateProgressBar(session = session, id = "predict__progress_bar", value = 0, total = 4000, title = "Predicting ...")
+        
+        example_data <- predict_example_data[sample(nrow(predict_example_data), ceiling(nrow(predict_example_data) / 100)), ] %>%
+            filter_at(vars(c(freq_prev, freq_next)), any_vars(. != 0 ))
+        
+        example_result <- covmutit_predict(example_data, session = session)
+        
+        shinyjs::show("predict__result_container")
+        output$predict__result_F_estimate_plot <- renderPlot(example_result$F_estimate_plot)
+        output$predict__result_mutation_freq_scatter_plot <- renderPlot(example_result$scatter_plot)
+        output$predict__result_table <- DT::renderDataTable(
+            example_result$table,
+            server = FALSE,
+            extensions = 'Buttons',
+            options = list(
+                pageLength = 25,
+                columnDefs = list(list(className = 'dt-center', targets = "_all")),
+                dom = 'Bfrtip',
+                buttons = c('copy', 'csv', 'excel')
+            ),
+            class = "display"
+        )
+        
+        shinyjs::hide("predict__progress_bar_container")
+    })
     
 }
 

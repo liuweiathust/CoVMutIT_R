@@ -55,7 +55,11 @@ generate_shrink_factor_for_bignum_score <- function(score) {
 # 
 target_func_label <- latex2exp::TeX('$target = \\prod(dbeta(P_{b},   \\frac{1 - F}{F} \\cdot P_{a},   \\frac{1 - F}{F} \\cdot (1 - P_{a}) ))$')
 
-covmutit_predict <- function(mutation_freq_table) {
+covmutit_predict <- function(mutation_freq_table, session = NULL) {
+  
+  N <- nrow(mutation_freq_table)
+  
+  current_step = 0
 
   # 1st iteration ---------------------------------------------------------------------------------------------------
   x1 <- seq(1e-5, 1, length=1000)
@@ -65,6 +69,8 @@ covmutit_predict <- function(mutation_freq_table) {
   for (i in seq_along(x1)) {
     F <- x1[i]
     y1[i] <- BN_target_score_fun(freq_table=mutation_freq_table, F=F)
+    current_step <- current_step + 1
+    shinyWidgets::updateProgressBar(session = session, id = "predict__progress_bar", value = current_step, total = 4000, title = "Predicting (Iteration: 1) ...")
   }
   
   F1 <- x1[get_max_bigfloat_index(y1)]
@@ -74,6 +80,8 @@ covmutit_predict <- function(mutation_freq_table) {
   
   for (i in seq_along(x1)) {
     z1[i] <- as.numeric(bignum::as_bigfloat(y1[i]) / bignum::as_bigfloat(shrink_factor1))
+    current_step <- current_step + 1
+    shinyWidgets::updateProgressBar(session = session, id = "predict__progress_bar", value = current_step, total = 4000, title = "Predicting (Iteration: 1) ...")
   }
   
   
@@ -85,6 +93,8 @@ covmutit_predict <- function(mutation_freq_table) {
   for (i in seq_along(x2)) {
     F = x2[i]
     y2[i] <- BN_target_score_fun(freq_table=mutation_freq_table, F=F)
+    current_step <- current_step + 1
+    shinyWidgets::updateProgressBar(session = session, id = "predict__progress_bar", value = current_step, total = 4000, title = "Predicting (Iteration: 2) ...")
   }
   
   F2 <- x2[get_max_bigfloat_index(y2)]
@@ -95,6 +105,8 @@ covmutit_predict <- function(mutation_freq_table) {
   
   for (i in seq_along(x2)) {
     z2[i] <- as.numeric(bignum::as_bigfloat(y2[i]) / bignum::as_bigfloat(shrink_factor2))
+    current_step <- current_step + 1
+    shinyWidgets::updateProgressBar(session = session, id = "predict__progress_bar", value = current_step, total = 4000, title = "Predicting (Iteration: 2) ...")
   }
   
   F <- F2
@@ -125,9 +137,9 @@ covmutit_predict <- function(mutation_freq_table) {
       panel.grid.major = element_blank(),
       panel.grid.minor = element_blank(),
       axis.text.x = element_text(angle = 45, vjust=0.5, size=8),
-    )
+    ) 
   
-  F_estimate_plot <- ggdraw(p1) + draw_plot(p2 , 0.47, 0.47, 0.5, 0.5)
+  F_estimate_plot <- ggdraw(p1) + draw_plot(p2 , 0.47, 0.47, 0.5, 0.5) 
   
   pvalue_table <- mutation_freq_table %>%
     filter(freq_prev != 0) %>%
@@ -143,8 +155,7 @@ covmutit_predict <- function(mutation_freq_table) {
     xlab("mutation frequency (prev-month)") +
     ylab("mutation frequency (next-month)") +
     coord_fixed() 
-    
-  
+
   return(list(F_estimate_plot=F_estimate_plot, table=pvalue_table, scatter_plot=freq_scatter_plot))
 }
 
