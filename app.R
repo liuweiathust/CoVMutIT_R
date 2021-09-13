@@ -75,7 +75,13 @@ world_sf <- ne_countries(scale = "medium", returnclass = "sf")
 # Genes -------------------------------------------------------------------
 
 genes_list <- c("ORF1ab", "S", "ORF3a", "E", "M", "ORF6", "ORF7a", "ORF7b", "ORF8", "N", "ORF10")
+
+
+# initialize data ---------------------------------------------------------
+
 date_list <- colnames(candidate_mutations_total_table_global)
+
+iso3c_list <- candidate_mutations_count_table_country %>% distinct(iso3c) %>% pull()
 
 
 # Preprocess mutation table for HTML displaying ---------------------------
@@ -472,9 +478,8 @@ PredictTab <- tabItem(
                 )
             )
         ),
-        hidden(
-            div(id = "predict_result_anchor")
-        )
+        div(textOutput("predict__debug_output")),
+        div(id = "predict_result_anchor")
     )
     
 )
@@ -976,6 +981,27 @@ server <- function(input, output, session) {
             updateActionButton(session, inputId = "predict__load_example_data", label = "Show Example")
         }
 
+    })
+    
+    predict__result <- reactive("not initialized!")
+    
+    observeEvent(input$predict__run_predict, {
+        predict__result("update reactive var")
+        req(predict__result())
+        insertUI(
+            "predict_result_anchor",
+            where = "afterEnd",
+            ui = box(
+                "update UI!"
+            )
+        )
+        
+    })
+    
+    debugMessage <- reactive("hello world!")
+    
+    output$predict__debug_output <- renderText({
+        debugMessage()
     })
     
     output$upload_file_path <- renderTable(input$predict_upload)
