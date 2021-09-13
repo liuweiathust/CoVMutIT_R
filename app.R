@@ -485,11 +485,18 @@ PredictTab <- tabItem(
                     width = 12,
                     collapsible = TRUE,
                     title = "Example data for prediction",
-                    tableOutput("predict__example_data_table")
+                    tableOutput("predict__example_data_table"),
+                    footer = actionButton("predict__run_predict_with_example_data", "Predict (Example data)")
                 )
             )
         ),
-        div(textOutput("predict__debug_output")),
+        div(
+            box(
+                width = 12,
+                title = "Debug",
+                textOutput("predict__debug_output")
+            )
+        ),
         div(id = "predict_result_anchor")
     )
     
@@ -1004,8 +1011,6 @@ server <- function(input, output, session) {
     predict__result <- reactive("not initialized!")
     
     observeEvent(input$predict__run_predict, {
-        predict__result("update reactive var")
-        req(predict__result())
         insertUI(
             "predict_result_anchor",
             where = "afterEnd",
@@ -1036,13 +1041,6 @@ server <- function(input, output, session) {
     })
 
     output$predict__example_data_table <- renderTable(predictExampleData(), align = "c")
-    
-    output$predict__run_predict <- renderUI({
-        fluidRow(
-            box(),
-            box()
-        )
-    })
     
 }
 
