@@ -1061,6 +1061,7 @@ server <- function(input, output, session) {
             predict_result$table,
             server = FALSE,
             extensions = 'Buttons',
+            selection = "none",
             options = list(
                 pageLength = 25,
                 columnDefs = list(list(className = 'dt-center', targets = "_all")),
@@ -1111,6 +1112,7 @@ server <- function(input, output, session) {
             example_result$table,
             server = FALSE,
             extensions = 'Buttons',
+            selection = "none",
             options = list(
                 pageLength = 25,
                 columnDefs = list(list(className = 'dt-center', targets = "_all")),
