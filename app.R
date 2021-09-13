@@ -288,7 +288,7 @@ DetailsTab <- tabItem(
                       width = 12,
                       closable = FALSE,
                       collapsible = TRUE,
-                      plotOutput("mutation_monthly_freq_line_plot", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
+                      plotlyOutput("mutation_monthly_freq_line_plot", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
                   )
                 ),
                 
@@ -884,27 +884,53 @@ server <- function(input, output, session) {
         ggplotly(g)
     })
     
-    output$mutation_monthly_freq_line_plot <- renderPlot({
+    output$mutation_monthly_freq_line_plot <- renderPlotly({
         date_next <- lubridate::ymd(input$details__date_select, truncated = TRUE)
         date_prev <- date_next - months(1)
-        g <- mutations_monthly_count_each %>% 
+        mutationCountTable <- candidate_mutations_count_table_country %>%
+            filter(mutation == input$details__mutation_select) %>% 
+            filter(iso3c == input$details__country_select) %>% 
+            gather("date", "count", colnames(candidate_mutations_count_table_country)[-c(1, 2)]) %>% 
+            mutate(date = lubridate::ymd(date, truncated = TRUE))
+        
+        mutationTotalTable <- candidate_mutations_total_table_country %>% 
+            filter(iso3c == input$details__country_select) %>% 
+            gather("date", "total", colnames(candidate_mutations_count_table_country)[-c(1, 2)]) %>% 
+            mutate(date = lubridate::ymd(date, truncated = TRUE))
+        
+        table_geounit <- mutationCountTable %>% 
+            left_join(mutationTotalTable, by=c("iso3c", "date")) %>% 
+            filter(date >= as.Date("2020-03-01")) %>% 
+            mutate(freq=ifelse(total==0, 0, count / total)) 
+        
+        table_global <- mutations_monthly_count_each %>% 
             filter(mutation == input$details__mutation_select) %>% 
             gather(date, count, colnames(mutations_monthly_count_each)[-1]) %>% 
             left_join(mutations_monthly_count_all) %>% 
-            mutate(freq = count / total, date = lubridate::ymd(date, truncated = TRUE)) %>% 
-            ggplot(aes(x=date, y=freq)) +
-            geom_vline(xintercept=date_prev, color="#EE0000", size=1.0, alpha=0.2, linetype=2) +
-            geom_vline(xintercept=date_next, color="#EE0000", size=1.0, alpha=0.2, linetype=2) +
-            geom_rect(aes(xmin=date_prev, xmax=date_next, ymin=-Inf, ymax=Inf), fill="#EE0000", alpha=0.01) +
-            geom_line(color=DEFAULT_LINE_COLOR, size=1) +
+            mutate(freq = count / total, date = lubridate::ymd(date, truncated = TRUE)) 
+        
+        g <- select(table_geounit, date, selected_geounit=freq) %>% 
+            left_join(select(table_global, date, global=freq)) %>% 
+            gather("group", "freq", 2:3) %>% 
+            ggplot(aes(x=date, y=freq, group=group, color=group)) +
+            # geom_vline(xintercept=date_prev, color="#EE0000", size=1.0, alpha=0.2, linetype=2) +
+            # geom_vline(xintercept=date_next, color="#EE0000", size=1.0, alpha=0.2, linetype=2) +
+            # geom_rect(aes(xmin=date_prev, xmax=date_next, ymin=-Inf, ymax=Inf), fill="#EE0000", alpha=0.01) +
+            geom_line(aes(text=sprintf("Date: %s\nFrequency: %.2f%%", format(date, "%Y-%m"), freq * 100))) +
+            scale_color_aaas() +
             scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
             scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
             ylab("Mutant frequency") +
             theme(
-                axis.title.x = element_blank()
+                axis.title = element_text(size=9),
+                axis.title.x = element_blank(),
+                axis.text = element_text(size=8),
+                axis.text.x = element_text(angle=45, hjust=0.8, vjust=1.0),
+                legend.position = "bottom",
             )
-        return (g)
-        # ggplotly(g) %>%  config(modeBarButtons = list(list("toImage")), displaylogo = FALSE, toImageButtonOptions = list(filename = "download", format = "svg"))
+        
+        ggplotly(g, tooltip = 'text') %>%  
+            layout(legend = list(orientation = "h"), hovermode = 'x unified')
     })
     
     output$balding_nichols_manhattan_plot <- renderPlot({
