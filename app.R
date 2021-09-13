@@ -466,7 +466,7 @@ PredictTab <- tabItem(
                     "[description holdplace]",
                 ),
                 div(
-                    class = "col-sm-12 col-lg-6",
+                    class = "col-sm-12 col-lg-12",
                     fileInput(
                         "predict_upload", 
                         label = "Upload File", 
@@ -479,71 +479,60 @@ PredictTab <- tabItem(
                 actionButton("predict__load_example_data", "Show Example")
             )
         ),
-        box(
-            title = "Uploaded File Path",
-            width = 12,
-            DT::dataTableOutput("upload_file_path")
-        ),
-        hidden(
-            div(
-                id = "predict__exmpale_data_container", 
-                box(
-                    width = 12,
-                    collapsible = TRUE,
-                    title = "Example data for prediction",
-                    tableOutput("predict__example_data_table"),
-                    footer = actionButton("predict__run_predict_with_example_data", "Predict (Example data)")
-                )
-            )
-        ),
-        div(
+    ),
+    # box(
+    #     title = "Uploaded File Path",
+    #     width = 12,
+    #     DT::dataTableOutput("upload_file_path")
+    # ),
+    hidden(
+        fluidRow(
+            id = "predict__exmpale_data_container", 
             box(
                 width = 12,
-                title = "Debug",
-                textOutput("predict__debug_output")
+                collapsible = TRUE,
+                title = "Example data for prediction",
+                tableOutput("predict__example_data_table"),
+                footer = actionButton("predict__run_predict_with_example_data", "Predict (Example data)")
             )
-        ),
-        hidden(
-            div(
-                id = "predict__progress_bar_container",
-                class = "col-lg-12 col-md-12", 
-                shinyWidgets::progressBar(id = "predict__progress_bar", value = 0, total = 4000, title = "Predicting ...", display_pct = TRUE)
+        )
+    ),
+    # div(
+    #     box(
+    #         width = 12,
+    #         title = "Debug",
+    #         textOutput("predict__debug_output")
+    #     )
+    # ),
+    hidden(
+        fluidRow(
+            id = "predict__progress_bar_container",
+            box(
+                width = 12,
+                title = NULL,
+                headerBorder = FALSE,
+                shinyWidgets::progressBar(id = "predict__progress_bar", value = 0, total = 4000, title = "Predicting ...", display_pct = TRUE) 
             )
-        ),
-        hidden(
-          div(
-              id = "predict__result_container",
-              fluidRow(
-                  div(
-                      class = "col-lg-6 col-md-12", 
-                      box(
-                          width = 12,
-                          div(
-                              align = "center",
-                              plotOutput("predict__result_F_estimate_plot", width = 350, height = 300) %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
-                          )
-                      )
-                  ),
-                  div(
-                      class = "col-lg-6 col-md-12", 
-                      box(
-                          width = 12,
-                          plotOutput("predict__result_mutation_freq_scatter_plot", height = 300) %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
-                      )
-                  ),
-                  div(
-                      class = "col-lg-12 col-md-12", 
-                      box(
-                          width = 12,
-                          DT::dataTableOutput("predict__result_table")
-                      )
-                  )
+        )
+    ),
+    hidden(
+        fluidRow(
+          id = "predict__result_container",
+          box(
+              div(
+                  align = "center",
+                  plotOutput("predict__result_F_estimate_plot", width = 350, height = 300) %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
               )
-          )  
-        ),
-        div(id = "predict_result_anchor")
+          ),
+          box(
+              plotOutput("predict__result_mutation_freq_scatter_plot", height = 300) %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
+          ),
+          box(
+              width = 12,
+              DT::dataTableOutput("predict__result_table")
+          )
+      ) 
     )
-    
 )
 
 
@@ -1042,6 +1031,7 @@ server <- function(input, output, session) {
     observeEvent(input$predict__load_example_data, {
         if (input$predict__load_example_data %% 2 == 1) {
             shinyjs::show("predict__exmpale_data_container")
+            shinyjs::hide("predict__result_container")
             updateActionButton(session, inputId = "predict__load_example_data", label = "Hide Example")
         } else {
             shinyjs::hide("predict__exmpale_data_container")
@@ -1050,26 +1040,46 @@ server <- function(input, output, session) {
 
     })
     
-    predict__result <- reactive("not initialized!")
-    
     observeEvent(input$predict__run_predict, {
-        insertUI(
-            "predict_result_anchor",
-            where = "afterEnd",
-            ui = box(
-                "update UI!"
-            )
+        req(input$predict_upload)
+        
+        shinyjs::show("predict__progress_bar_container")
+        
+        shinyWidgets::updateProgressBar(session = session, id = "predict__progress_bar", value = 0, total = 4000, title = "Predicting ...")
+        
+        uploaded_data <- readxl::read_xlsx(input$predict_upload$datapath)
+        colnames(uploaded_data) <- c("mutation", "position", "freq_prev", "freq_next")
+        
+        uploaded_data %<>% filter_at(vars(c(freq_prev, freq_next)), any_vars(. != 0 ))
+        
+        predict_result <- covmutit_predict(uploaded_data, session = session)
+        
+        shinyjs::show("predict__result_container")
+        output$predict__result_F_estimate_plot <- renderPlot(predict_result$F_estimate_plot)
+        output$predict__result_mutation_freq_scatter_plot <- renderPlot(predict_result$scatter_plot)
+        output$predict__result_table <- DT::renderDataTable(
+            predict_result$table,
+            server = FALSE,
+            extensions = 'Buttons',
+            options = list(
+                pageLength = 25,
+                columnDefs = list(list(className = 'dt-center', targets = "_all")),
+                dom = 'Bfrtip',
+                buttons = c('copy', 'csv', 'excel')
+            ),
+            class = "display"
         )
         
+        shinyjs::hide("predict__progress_bar_container")
     })
     
-    debugMessage <- reactive("hello world!")
-    
-    output$predict__debug_output <- renderText({
-        debugMessage()
-    })
-    
-    output$upload_file_path <- DT::renderDataTable(input$predict_upload, )
+    # debugMessage <- reactive("hello world!")
+    # 
+    # output$predict__debug_output <- renderText({
+    #     debugMessage()
+    # })
+    # 
+    # output$upload_file_path <- DT::renderDataTable(input$predict_upload)
     
     predictExampleData <- reactive({
         predict_example_data[sample(nrow(predict_example_data), ceiling(nrow(predict_example_data) / 10)), ] %>% 
