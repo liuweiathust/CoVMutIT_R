@@ -968,7 +968,14 @@ server <- function(input, output, session) {
     # Predict -----------------------------------------------------------------
 
     observeEvent(input$predict__load_example_data, {
-        shinyjs::show("predict__exmpale_data_container")
+        if (input$predict__load_example_data %% 2 == 1) {
+            shinyjs::show("predict__exmpale_data_container")
+            updateActionButton(session, inputId = "predict__load_example_data", label = "Hide Example")
+        } else {
+            shinyjs::hide("predict__exmpale_data_container")
+            updateActionButton(session, inputId = "predict__load_example_data", label = "Show Example")
+        }
+
     })
     
     output$upload_file_path <- renderTable(input$predict_upload)
@@ -976,10 +983,15 @@ server <- function(input, output, session) {
     predictExampleData <- reactive({
         predict_example_data[sample(nrow(predict_example_data), ceiling(nrow(predict_example_data) / 10)), ] %>% 
             filter_at(vars(c(freq_prev, freq_next)), any_vars(. != 0 )) %>% 
-            head(n=10)
+            mutate(
+                freq_prev = ifelse(freq_prev == 0 , "0", formatC(freq_prev, format = "e", digits = 2)), 
+                freq_next = ifelse(freq_next == 0 , "0", formatC(freq_next, format = "e", digits = 2))
+            ) %>% 
+            head(n=10) %>% 
+            arrange(position)
     })
 
-    output$predict__example_data_table <- renderTable({predictExampleData()})
+    output$predict__example_data_table <- renderTable(predictExampleData(), align = "c")
     
     output$predict__run_predict <- renderUI({
         fluidRow(
