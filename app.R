@@ -74,7 +74,9 @@ world_sf <- ne_countries(scale = "medium", returnclass = "sf")
 
 # Genes -------------------------------------------------------------------
 
-genes_list <- c("ORF1ab", "S", "ORF3a", "E", "M", "ORF6", "ORF7a", "ORF7b", "ORF8", "N", "ORF10")
+GENE_LIST <- c("ORF1ab", "S", "ORF3a", "E", "M", "ORF6", "ORF7a", "ORF7b", "ORF8", "N", "ORF10")
+
+MUTATION_LIST <- candidate_mutations %>% distinct(mutation) %>% pull()
 
 
 # initialize data ---------------------------------------------------------
@@ -157,7 +159,7 @@ HomeTab <- tabItem(
                     selectInput(
                         "home__gene_select",
                         label = "Gene",
-                        choices = genes_list,
+                        choices = GENE_LIST,
                         selected = "S",
                         multiple = FALSE
                     ),
@@ -195,12 +197,14 @@ HomeTab <- tabItem(
                         text = textOutput("home__mutation_selected_aachange")
                     )
                 ),
+                
                 box(
                     width = 12,
                     closable = FALSE,
                     collapsible = TRUE,
                     plotOutput("home__global_mutation_count_plot", height = 250)
                 ),
+                
                 box(
                     width = 12,
                     selectInput(
@@ -210,9 +214,8 @@ HomeTab <- tabItem(
                         selected = "USA",
                         multiple = FALSE
                     ),
-                    plotOutput("home__country_mutation_count_plot", height = 250)
+                    plotOutput("home__country_mutation_freq_plot", height = 300)
                 )
-                
             )
         )
     )
@@ -311,21 +314,21 @@ DetailsTab <- tabItem(
                 selectInput(
                     "details__gene_select",
                     label = "Select Gene",
-                    choices = c("S"),
+                    choices = GENE_LIST,
                     selected = "S",
                     multiple = FALSE
                 ),
                 selectInput(
                     "details__mutation_select",
                     label = "Select Mutation",
-                    choices = c("A23403G", "A23063T"),
+                    choices = MUTATION_LIST,
                     selected = "A23063T",
                     multiple = FALSE
                 ),
                 selectInput(
                     "details__country_select",
                     label = "Select Country",
-                    choices = c("GBR", "USA"),
+                    choices = COUNTRY_LIST,
                     selected = "USA",
                     multiple = FALSE
                 ),
@@ -708,7 +711,7 @@ server <- function(input, output, session) {
             scale_fill_distiller(palette = "RdBu", trans = "log10")
     })
     
-    output$home__country_mutation_count_plot <- renderPlot({
+    output$home__country_mutation_freq_plot <- renderPlot({
         # line plot
         mutationCountTable <- candidate_mutations_count_table_country %>%
             filter(mutation == home__MutationSelected()) %>% 
@@ -721,15 +724,22 @@ server <- function(input, output, session) {
             gather("date", "total", colnames(candidate_mutations_count_table_country)[-c(1, 2)]) %>% 
             mutate(date = lubridate::ymd(date, truncated = TRUE))
         
-        mutationCountTable %>% 
+        table <- mutationCountTable %>% 
             left_join(mutationTotalTable, by=c("iso3c", "date")) %>% 
             filter(date >= as.Date("2020-03-01")) %>% 
-            mutate(freq=ifelse(total==0, 0, count / total)) %>% 
-            ggplot(aes(x=date, y=freq)) +
-            geom_line(color=DEFAULT_LINE_COLOR, size=1) +
+            mutate(freq=ifelse(total==0, 0, count / total)) 
+        
+
+        scale_factor <- 1 / max(table$total) 
+        
+        ggplot() +
+            geom_line(aes(x = table$date, y=table$freq), color="#EE0000", alpha=0.85, size=1) +
+            geom_bar(aes(x = table$date, y=table$total * scale_factor), stat="identity", fill="#3B4992", alpha=0.5) +
             scale_x_date(date_breaks = "3 months", date_labels = "%Y-%m") +
-            scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
-            ylab("Mutation frequency") +
+            scale_y_continuous(
+                name = "Frequency", labels = scales::percent, limits = c(0, 1),
+                sec.axis = sec_axis(~ . / scale_factor, name = "#(Assemblies)", labels = scales::label_number_si())
+            ) +
             theme(
                 axis.title.x = element_blank(),
                 axis.text.x = element_text(angle=45, hjust=0.8, vjust=1.0),
