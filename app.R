@@ -288,7 +288,7 @@ DetailsTab <- tabItem(
                       width = 12,
                       closable = FALSE,
                       collapsible = TRUE,
-                      plotlyOutput("mutation_monthly_freq_line_plot", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
+                      plotlyOutput("mutation_monthly_freq_line_plot", height = "300px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
                   )
                 ),
                 
@@ -930,7 +930,7 @@ server <- function(input, output, session) {
             )
         
         ggplotly(g, tooltip = 'text') %>%  
-            layout(legend = list(orientation = "h"), hovermode = 'x unified')
+            layout(legend = list(orientation = "h"), hovermode = 'x unified', height = 300)
     })
     
     output$balding_nichols_manhattan_plot <- renderPlot({
