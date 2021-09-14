@@ -1034,7 +1034,7 @@ server <- function(input, output, session) {
     output$mutations_accumulation_trends <- renderPlotly({
         g <- mutations_accumulation_trends %>%  
             ggplot(aes(x=date, y=mean, group=group, color=group)) +
-            geom_line() +
+            geom_line(aes(text=sprintf("Date: %s\nCount: %.2f", format(date, "%Y-%m"), mean))) +
             geom_point(size=0.8)+
             geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd), width=.3,
                           position=position_dodge(0.05)) +
@@ -1048,7 +1048,7 @@ server <- function(input, output, session) {
                 axis.text.x = element_text(angle=45, hjust=0.8, vjust=1.0),
                 legend.position = "bottom",
             )
-        ggplotly(g)%>% layout(legend = list(orientation = "h"))
+        ggplotly(g, tooltip = 'text')%>% layout(legend = list(orientation = "h"), hovermode = 'x unified')
     })
     
 
