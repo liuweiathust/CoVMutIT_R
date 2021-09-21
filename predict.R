@@ -155,8 +155,23 @@ covmutit_predict <- function(mutation_freq_table, session = NULL) {
     xlab("mutation frequency (prev-month)") +
     ylab("mutation frequency (next-month)") +
     coord_fixed() 
+  
+  max_value <- 20
+  
+  bn_manhattan_data <- pvalue_table %>% mutate(log10pvalue=ifelse(pvalue == 0, max_value, -log10(pvalue)))
+  
+  pvalue_manhattan_plot <- ggplot() +
+    geom_vline(xintercept=21563, color="#CCCCCC", size=1.0, alpha=0.8, linetype=2) +
+    geom_vline(xintercept=25384, color="#CCCCCC", size=1.0, alpha=0.8, linetype=2) +
+    geom_point(aes(x=position, y=log10pvalue), size=2, color="#999999", alpha=0.85, data=bn_manhattan_data) +
+    scale_y_continuous(limits = c(0, max_value)) +
+    ylab(expression("-log"[10]~"(p-value)")) +
+    xlab("SARS-CoV-2 genome position") +
+    theme(
+      legend.position = "none"
+    )
 
-  return(list(F_estimate_plot=F_estimate_plot, table=pvalue_table, scatter_plot=freq_scatter_plot))
+  return(list(F_estimate_plot=F_estimate_plot, table=pvalue_table, scatter_plot=freq_scatter_plot, manhattan_plot=pvalue_manhattan_plot))
 }
 
 

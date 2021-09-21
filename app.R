@@ -528,6 +528,10 @@ PredictTab <- tabItem(
               plotOutput("predict__result_mutation_freq_scatter_plot", height = 300) %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
           ),
           box(
+            width = 12,
+            plotOutput("predict__result_pvalue_manhattan_plot", height = 300) %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
+          ),
+          box(
               width = 12,
               DT::dataTableOutput("predict__result_table")
           )
@@ -1083,6 +1087,7 @@ server <- function(input, output, session) {
         shinyjs::show("predict__result_container")
         output$predict__result_F_estimate_plot <- renderPlot(predict_result$F_estimate_plot)
         output$predict__result_mutation_freq_scatter_plot <- renderPlot(predict_result$scatter_plot)
+        output$predict__result_pvalue_manhattan_plot <- renderPlot(predict_result$manhattan_plot)
         output$predict__result_table <- DT::renderDataTable(
             predict_result$table,
             server = FALSE,
@@ -1134,6 +1139,7 @@ server <- function(input, output, session) {
         shinyjs::show("predict__result_container")
         output$predict__result_F_estimate_plot <- renderPlot(example_result$F_estimate_plot)
         output$predict__result_mutation_freq_scatter_plot <- renderPlot(example_result$scatter_plot)
+        output$predict__result_pvalue_manhattan_plot <- renderPlot(example_result$manhattan_plot)
         output$predict__result_table <- DT::renderDataTable(
             example_result$table,
             server = FALSE,
