@@ -60,7 +60,7 @@ covmutit_predict <- function(mutation_freq_table, session = NULL) {
   N <- nrow(mutation_freq_table)
   
   current_step = 0
-
+  
   # 1st iteration ---------------------------------------------------------------------------------------------------
   x1 <- seq(1e-5, 1, length=1000)
   y1 <- rep(0, length(x1))
@@ -174,18 +174,26 @@ covmutit_predict <- function(mutation_freq_table, session = NULL) {
   freq_change_density_plot <- mutation_freq_table %>% 
     mutate(freq_diff = freq_next - freq_prev) %>% 
     ggplot(aes(x=freq_diff)) +
-    geom_density(color = DEFAULT_COLOR_PAL[1]) +
-    scale_x_continuous(limits = c(-1, 1)) +
+    geom_density(color = pal_aaas()(1)) +
+    scale_x_continuous(limits = c(-1, 1), labels = scales::percent) +
     xlab("freq_next - freq_prev") +
     ylab("Density")
   
-  freq_density_plot <- mutation_freq_table %>% gather(group, freq, c(freq_prev, freq_next)) %>% 
+  
+  freq_density_plot <- mutation_freq_table %>% 
+    gather(group, freq, c(freq_prev, freq_next)) %>% 
     ggplot(aes(x=freq, color=group)) +
-    geom_density(alpha = 0.4) +
+    geom_density() +
     scale_fill_aaas() +
     scale_color_aaas() +
+    scale_x_continuous(limits = c(0, 1), labels = scales::percent) +
+    ylab("Density") +
+    theme(
+      legend.position = "none",
+      axis.title.x = element_blank()
+    ) +
     facet_wrap(group ~ ., nrow = 2)
-
+  
   return(list(
     F_estimate_plot = F_estimate_plot, 
     table = pvalue_table, 
