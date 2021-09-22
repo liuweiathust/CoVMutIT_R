@@ -170,8 +170,30 @@ covmutit_predict <- function(mutation_freq_table, session = NULL) {
     theme(
       legend.position = "none"
     )
+  
+  freq_change_density_plot <- mutation_freq_table %>% 
+    mutate(freq_diff = freq_next - freq_prev) %>% 
+    ggplot(aes(x=freq_diff)) +
+    geom_density(color = DEFAULT_COLOR_PAL[1]) +
+    scale_x_continuous(limits = c(-1, 1)) +
+    xlab("freq_next - freq_prev") +
+    ylab("Density")
+  
+  freq_density_plot <- mutation_freq_table %>% gather(group, freq, c(freq_prev, freq_next)) %>% 
+    ggplot(aes(x=freq, color=group)) +
+    geom_density(alpha = 0.4) +
+    scale_fill_aaas() +
+    scale_color_aaas() +
+    facet_wrap(group ~ ., nrow = 2)
 
-  return(list(F_estimate_plot=F_estimate_plot, table=pvalue_table, scatter_plot=freq_scatter_plot, manhattan_plot=pvalue_manhattan_plot))
+  return(list(
+    F_estimate_plot = F_estimate_plot, 
+    table = pvalue_table, 
+    scatter_plot = freq_scatter_plot, 
+    manhattan_plot = pvalue_manhattan_plot,
+    freq_density_plot = freq_density_plot,
+    freq_change_density_plot = freq_change_density_plot
+  ))
 }
 
 
