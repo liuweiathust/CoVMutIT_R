@@ -40,6 +40,8 @@ source("./predict.R")
 DEFAULT_SPINNER_COLOR = "#3C8DBC"
 DEFAULT_LINE_COLOR = "#4393C3"
 
+DEFAULT_COLOR_PAL <- c("#3C8DBC", "#00A65A", "#00C0EF", "#F39C12", "#F56954", "#CCCCCC")
+
 # Helper functions ------------------------------------------------------------------------------------------------
 
 small_legend <- function(.plot, pointSize = 1, textSize = 8, spaceLegend = 0.8) {
