@@ -256,6 +256,7 @@ DetailsTab <- tabItem(
           class = "col-sm-12 col-lg-6",
           box(
             width = 12,
+            title = "Geographical distribution of cases carried selected mutation",
             closable = FALSE,
             collapsible = TRUE,
             plotOutput("mutation_count_geographic_distribution", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
@@ -266,6 +267,7 @@ DetailsTab <- tabItem(
           class = "col-sm-12 col-lg-6",
           box(
             width = 12,
+            title = "Overall mutation frequency",
             closable = FALSE,
             collapsible = TRUE,
             plotOutput("mutation_freq_geographic_distribution", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
@@ -276,6 +278,7 @@ DetailsTab <- tabItem(
           class = "col-sm-12 col-lg-6",
           box(
             width = 12,
+            title = "Geographical distribution of cases carried selected mutation in selected month",
             closable = FALSE,
             collapsible = TRUE,
             plotOutput("mutation_count_geographic_distribution_within_date", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
@@ -286,6 +289,7 @@ DetailsTab <- tabItem(
           class = "col-sm-12 col-lg-6",
           box(
             width = 12,
+            title = "Mutation frequency in selected month",
             closable = FALSE,
             collapsible = TRUE,
             plotOutput("mutation_freq_geographic_distribution_within_date", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
@@ -296,6 +300,7 @@ DetailsTab <- tabItem(
           class = "col-sm-12 col-lg-12",
           box(
             width = 12,
+            title = "Trajectory of mutation frequency",
             closable = FALSE,
             collapsible = TRUE,
             plotlyOutput("mutation_monthly_freq_line_plot", height = "300px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
@@ -306,6 +311,7 @@ DetailsTab <- tabItem(
           class = "col-sm-12 col-lg-12",
           box(
             width = 12,
+            title = "Manhattan plot showing the strength of genetic drift for each mutation",
             closable = FALSE,
             collapsible = TRUE,
             plotOutput("balding_nichols_manhattan_plot", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
@@ -316,6 +322,7 @@ DetailsTab <- tabItem(
           class = "col-sm-12 col-lg-12",
           box(
             width = 12,
+            title = "Scatter plot showing mutation frequency in two selected consecutive months",
             closable = FALSE,
             collapsible = TRUE,
             plotOutput("mutation_freq_bimonthly_scatter", height = "250px") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
@@ -327,6 +334,8 @@ DetailsTab <- tabItem(
       class = "col-sm-4 col-lg-3",
       box(
         width = 12,
+        class = "sticky-top",
+        title = "Filter",
         selectInput(
           "details__gene_select",
           label = "Select Gene",
