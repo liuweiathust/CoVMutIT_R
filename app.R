@@ -164,6 +164,7 @@ HomeTab <- tabItem(
       fluidRow(
         box(
           width=12,
+          title = "Filters",
           selectInput(
             "home__gene_select",
             label = "Gene",
@@ -187,6 +188,7 @@ HomeTab <- tabItem(
       fluidRow(
         box(
           width = 12,
+          title = "Mutations Predicted via CoVMutIT Framework",
           DT::dataTableOutput("home__mutations_table")
         )
       )
@@ -203,6 +205,10 @@ HomeTab <- tabItem(
           descriptionBlock(
             header = textOutput("home__mutation_selected"),
             text = textOutput("home__mutation_selected_aachange")
+          ),
+          tags$p(
+            class = "text-center text-mutated text-small", 
+            "Select a mutation by clicking the table"
           )
         ),
         
@@ -210,11 +216,13 @@ HomeTab <- tabItem(
           width = 12,
           closable = FALSE,
           collapsible = TRUE,
+          title = "Cases Carried Selected Mutation",
           plotOutput("home__global_mutation_count_plot", height = 250)
         ),
         
         box(
           width = 12,
+          title = "#(Assemblies) & Mutations Frequency",
           selectInput(
             "home__country_select",
             label = "Country",
@@ -645,7 +653,13 @@ AboutUsTab <- tabItem(
 )
 
 Body <- dashboardBody(
+  
+  tags$head(
+    tags$link(rel = "stylesheet", type = "text/css", href = "main.css")
+  ),
+  
   useShinyjs(),
+  
   tabItems(
     HomeTab,
     DetailsTab,
