@@ -467,7 +467,18 @@ StatisticsTab <- tabItem(
         plotlyOutput("mutations_accumulation_trends") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
       )
     )
-  ) 
+  ),
+  
+  fluidRow(
+    tags$hr(),
+    div(
+      align = "center",
+      div(
+        style = "width: 320px; height: 200px;",
+        HTML("<script type=\"text/javascript\" src=\"//rf.revolvermaps.com/0/0/7.js?i=5h2tqeyc311&amp;m=0&amp;c=ff0000&amp;cr1=ffffff&amp;sx=0\" async=\"async\"></script>")
+      )
+    )
+  )
 )
 
 
@@ -538,26 +549,32 @@ PredictTab <- tabItem(
     fluidRow(
       id = "predict__result_container",
       box(
+        title = "Estimation of F",
         div(
           align = "center",
           plotOutput("predict__result_F_estimate_plot", width = 350, height = 300) %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
         )
       ),
       box(
+        title = "Scatter plot of mutation frequencies",
         plotOutput("predict__result_mutation_freq_scatter_plot", height = 300) %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
       ),
       box(
+        title = "Density plot of mutation frequencies",
         plotOutput("predict__freq_density_plot", height = 400) %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
       ),
       box(
+        title = "Density plot of mutation frequencies shift",
         plotOutput("predict__freq_change_density_plot", height = 400) %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
       ),
       box(
         width = 12,
+        title = "Manhattan plot showing the strength of genetic drift for each mutation",
         plotOutput("predict__result_pvalue_manhattan_plot", height = 300) %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
       ),
       box(
         width = 12,
+        title = "Prediction results",
         DT::dataTableOutput("predict__result_table")
       )
     ) 
