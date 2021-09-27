@@ -335,7 +335,7 @@ DetailsTab <- tabItem(
       box(
         width = 12,
         class = "sticky-top",
-        title = "Filter",
+        title = "Filters",
         selectInput(
           "details__gene_select",
           label = "Select Gene",
