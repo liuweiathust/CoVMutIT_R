@@ -86,6 +86,8 @@ GENE_LIST <- c("ORF1ab", "S", "ORF3a", "E", "M", "ORF6", "ORF7a", "ORF7b", "ORF8
 
 MUTATION_LIST <- candidate_mutations %>% distinct(mutation) %>% pull()
 
+stat1 <- 
+
 
 # initialize data ---------------------------------------------------------
 
@@ -389,7 +391,7 @@ StatisticsTab <- tabItem(
           column(
             width=3,
             descriptionBlock(
-              header = "2,518,369",
+              header = "4,100,683",
               text = "Total assemblies",
               rightBorder = TRUE,
               marginBottom = FALSE
@@ -398,8 +400,8 @@ StatisticsTab <- tabItem(
           column(
             width=3,
             descriptionBlock(
-              header = "2,518,369",
-              text = "Total assemblies",
+              header = "110,020",
+              text = "Mutations",
               rightBorder = TRUE,
               marginBottom = FALSE
             )
@@ -407,8 +409,8 @@ StatisticsTab <- tabItem(
           column(
             width=3,
             descriptionBlock(
-              header = "2,518,369",
-              text = "Total assemblies",
+              header = "88,835",
+              text = "Nonsynonymous Mutations",
               rightBorder = TRUE,
               marginBottom = FALSE
             )
@@ -416,8 +418,8 @@ StatisticsTab <- tabItem(
           column(
             width=3,
             descriptionBlock(
-              header = "2,518,369",
-              text = "Total assemblies",
+              header = "581",
+              text = "Notable Mutations",
               rightBorder = TRUE,
               marginBottom = FALSE
             )
@@ -493,7 +495,11 @@ PredictTab <- tabItem(
       fluidRow(
         div(
           class = "col-sm-12",
-          "[description holdplace]",
+          div(
+            div("The coronavirus samples of consecutive two-months from the same geographical region are regarded as two distinct sub-populations, and the changes in mutation prevalence will be used to estimate the genetic drift while coronavirus spreading. The Balding-Nichols model is employed to estimate the F statistics, which represents average genetic drift between two sub-populations, then a beta-distribution testing is used to estimate the exact genetic drift strength of each mutation site between sub-populations. "),
+            div("Here we allow users to upload the data of mutation prevelence in a certain area for two consecutive months to predict the statistical significance of the increase in prevelence in order to infer the strength of gentic drift for each mutation.")
+          )
+          
         ),
         div(
           class = "col-sm-12 col-lg-12",
