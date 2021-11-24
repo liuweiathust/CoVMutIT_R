@@ -248,11 +248,11 @@ DetailsTab <- tabItem(
   fluidRow(
     div(
       class = "col-sm-8 col-lg-9",
-      box(
-        width = 12,
-        title = "Basic information",
-        "hello world!"
-      ),
+      # box(
+      #   width = 12,
+      #   title = "Basic information",
+      #   "hello world!"
+      # ),
       fluidRow(
         div(
           class = "col-sm-12 col-lg-6",
