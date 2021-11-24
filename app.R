@@ -433,7 +433,7 @@ StatisticsTab <- tabItem(
       class = "col-lg-4 col-md-6 col-sm-12", 
       box(
         width = 12,
-        title = "Statistics",
+        title = "#(Assemblies) Collected from GISAID (7-day moving average)",
         plotlyOutput("trend_d_plot") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
       )
     ),
@@ -443,7 +443,7 @@ StatisticsTab <- tabItem(
       class = "col-lg-4 col-md-6 col-sm-12", 
       box(
         width = 12,
-        title = "Statistics",
+        title = "#(Assemblies) Collected from GISAID (monthly average)",
         plotlyOutput("trend_m_plot") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
       )
     ),
@@ -453,7 +453,7 @@ StatisticsTab <- tabItem(
       class = "col-lg-4 col-md-6 col-sm-12", 
       box(
         width = 12,
-        title = "Statistics",
+        title = "Geographic origin of collected sequences",
         plotOutput("top10_countries_sequences_count_piechart") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
       )
     ),
@@ -463,7 +463,7 @@ StatisticsTab <- tabItem(
       class = "col-lg-4 col-md-6 col-sm-12", 
       box(
         width = 12,
-        title = "Statistics",
+        title = "The trends of SARS-CoV-2 genome accumulated mutations",
         plotlyOutput("mutations_accumulation_trends") %>% withSpinner(color = DEFAULT_SPINNER_COLOR)
       )
     )
